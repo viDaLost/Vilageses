@@ -62,7 +62,7 @@ body { touch-action: manipulation; }
   transform: translateX(-50%);
   width: min(96vw, 1140px);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
   padding: 10px;
 }
@@ -94,7 +94,7 @@ body { touch-action: manipulation; }
 .status-cluster {
   padding: 10px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 8px;
   align-items: stretch;
 }
@@ -442,4 +442,12 @@ body { touch-action: manipulation; }
     font-size: 11px;
     border-radius: 999px;
   }
+}
+
+
+@media (max-width: 760px) {
+  #top-bar { width: min(96vw, 620px); gap: 6px; padding: 8px; }
+  .res-card { min-height: 56px; padding: 7px 8px; }
+  .res-value { font-size: 14px; }
+  .res-label { font-size: 10px; }
 }
