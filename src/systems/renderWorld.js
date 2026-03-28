@@ -4,17 +4,17 @@ import { loadDecorModel, loadUnitModel } from '../core/assets.js';
 import { createHexShape, isTileInsideTerritory } from './world.js';
 
 const terrainMaterials = new Map();
-const edgeMaterial = new THREE.MeshStandardMaterial({ color: 0x28170d, roughness: 1, metalness: 0 });
+const edgeMaterial = new THREE.MeshStandardMaterial({ color: 0x2d1a0f, roughness: 1, metalness: 0 });
 
 function getTerrainMaterial(type) {
   if (terrainMaterials.has(type)) return terrainMaterials.get(type);
   const cfg = TERRAIN_TYPES[type];
   const mat = new THREE.MeshStandardMaterial({
     color: cfg.color,
-    roughness: type === 'river' || type === 'water' ? .22 : .92,
-    metalness: type === 'water' ? .12 : 0,
-    emissive: type === 'water' ? 0x14314f : 0x000000,
-    emissiveIntensity: type === 'water' ? .22 : 0
+    roughness: type === 'river' || type === 'water' ? .2 : .9,
+    metalness: type === 'water' ? .1 : 0,
+    emissive: type === 'water' ? 0x224b72 : 0x000000,
+    emissiveIntensity: type === 'water' ? .26 : 0
   });
   terrainMaterials.set(type, mat);
   return mat;
@@ -44,12 +44,12 @@ function addMesh(group, tile, mesh) {
   group.add(mesh);
 }
 
-function addBushCluster(group, tile, pos, y) {
+function addBushCluster(group, tile, pos, y, spread = 1) {
   const mat = new THREE.MeshStandardMaterial({ color: 0x376d2a, roughness: 1 });
   for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
     const bush = new THREE.Mesh(new THREE.SphereGeometry(.18 + Math.random() * .12, 7, 7), mat);
     bush.scale.y = .8;
-    bush.position.set(pos.x + (Math.random() - .5) * 1.0, y + .14, pos.z + (Math.random() - .5) * 1.0);
+    bush.position.set(pos.x + (Math.random() - .5) * spread, y + .14, pos.z + (Math.random() - .5) * spread);
     bush.castShadow = true;
     addMesh(group, tile, bush);
   }
@@ -64,28 +64,28 @@ function addFlowerDots(group, tile, pos, y) {
   }
 }
 
-function addTreeCluster(group, tile, pos, y) {
+function addTreeCluster(group, tile, pos, y, pine = false) {
   const matTrunk = new THREE.MeshStandardMaterial({ color: 0x714a24, roughness: 1 });
   for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) {
-    const leafColor = Math.random() > .55 ? 0x2f6d2d : 0x1f5120;
+    const leafColor = pine ? 0x2b5e34 : (Math.random() > .55 ? 0x2f6d2d : 0x1f5120);
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.08, .11, .72, 5), matTrunk);
-    const crown = new THREE.Mesh(new THREE.ConeGeometry(.38 + Math.random() * .16, 1.05, 7), new THREE.MeshStandardMaterial({ color: leafColor, roughness: 1 }));
-    const crown2 = new THREE.Mesh(new THREE.ConeGeometry(.28 + Math.random() * .1, .7, 7), new THREE.MeshStandardMaterial({ color: tint(leafColor, .08), roughness: 1 }));
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(.38 + Math.random() * .16, pine ? 1.28 : 1.05, 7), new THREE.MeshStandardMaterial({ color: leafColor, roughness: 1 }));
+    const crown2 = new THREE.Mesh(new THREE.ConeGeometry(.28 + Math.random() * .1, pine ? .9 : .7, 7), new THREE.MeshStandardMaterial({ color: tint(leafColor, .08), roughness: 1 }));
     const ox = (Math.random() - .5) * 1.3;
     const oz = (Math.random() - .5) * 1.3;
     trunk.position.set(pos.x + ox, y + .38, pos.z + oz);
-    crown.position.set(pos.x + ox, y + 1.04, pos.z + oz);
-    crown2.position.set(pos.x + ox, y + 1.42, pos.z + oz);
+    crown.position.set(pos.x + ox, y + (pine ? 1.18 : 1.04), pos.z + oz);
+    crown2.position.set(pos.x + ox, y + (pine ? 1.62 : 1.42), pos.z + oz);
     trunk.castShadow = crown.castShadow = crown2.castShadow = true;
     addMesh(group, tile, trunk); addMesh(group, tile, crown); addMesh(group, tile, crown2);
   }
 }
 
-function addRockCluster(group, tile, pos, y) {
+function addRockCluster(group, tile, pos, y, golden = false) {
   for (let i = 0; i < 3 + Math.floor(Math.random() * 2); i++) {
     const rock = new THREE.Mesh(
       new THREE.DodecahedronGeometry(.2 + Math.random() * .18, 0),
-      new THREE.MeshStandardMaterial({ color: Math.random() > .5 ? 0x8b8b8b : 0x6f706f, roughness: 1 })
+      new THREE.MeshStandardMaterial({ color: golden ? 0xc9a44d : (Math.random() > .5 ? 0x8b8b8b : 0x6f706f), roughness: 1, emissive: golden ? 0x8b6822 : 0x000000, emissiveIntensity: golden ? .18 : 0 })
     );
     rock.position.set(pos.x + (Math.random() - .5) * 1.15, y + .12 + Math.random() * .18, pos.z + (Math.random() - .5) * 1.15);
     rock.scale.setScalar(.8 + Math.random() * 1.2);
@@ -94,9 +94,9 @@ function addRockCluster(group, tile, pos, y) {
   }
 }
 
-function addGrassCluster(group, tile, pos, y, color = 0xc4c15f) {
+function addGrassCluster(group, tile, pos, y, color = 0xc4c15f, density = 7) {
   const mat = new THREE.MeshStandardMaterial({ color, roughness: 1 });
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < density; i++) {
     const blade = new THREE.Mesh(new THREE.CylinderGeometry(.015, .03, .35 + Math.random() * .18, 4), mat);
     blade.position.set(pos.x + (Math.random() - .5) * 1.45, y + .14, pos.z + (Math.random() - .5) * 1.45);
     blade.rotation.z = (Math.random() - .5) * .24;
@@ -115,7 +115,7 @@ function addReedCluster(group, tile, pos, y) {
 
 function addDistantMountains(group) {
   group.clear();
-  const fogMat = new THREE.MeshStandardMaterial({ color: 0x50443b, roughness: 1, transparent: true, opacity: .96 });
+  const fogMat = new THREE.MeshStandardMaterial({ color: 0x5d5147, roughness: 1, transparent: true, opacity: .96 });
   for (let i = 0; i < 32; i++) {
     const angle = (i / 22) * Math.PI * 2;
     const radius = 44 + (i % 4) * 4 + Math.random() * 3;
@@ -161,11 +161,13 @@ export function renderTiles(sceneCtx, state) {
     topGlow.position.set(tile.pos.x, tile.height + .05, tile.pos.z);
     groups.overlays.add(topGlow);
 
-    if (tile.type === 'forest') { addTreeCluster(groups.decor, tile, tile.pos, tile.height + .02); addBushCluster(groups.decor, tile, tile.pos, tile.height + .02); }
-    if (tile.type === 'rock' || tile.type === 'hill') addRockCluster(groups.decor, tile, tile.pos, tile.height + .02);
-    if (tile.type === 'fertile') { addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0xcfce6a); addFlowerDots(groups.decor, tile, tile.pos, tile.height + .02); }
-    if (tile.type === 'grass') { addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0x9ab55b); if (Math.random() > .55) addBushCluster(groups.decor, tile, tile.pos, tile.height + .02); }
-    if (tile.type === 'river') addReedCluster(groups.decor, tile, tile.pos, tile.height + .02);
+    if (tile.type === 'forest') { addTreeCluster(groups.decor, tile, tile.pos, tile.height + .02, false); addBushCluster(groups.decor, tile, tile.pos, tile.height + .02, 1.2); addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0x9bb067, 4); }
+    if (tile.type === 'rock') addRockCluster(groups.decor, tile, tile.pos, tile.height + .02, false);
+    if (tile.type === 'hill') { addRockCluster(groups.decor, tile, tile.pos, tile.height + .02, false); if (Math.random() > .55) addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0xb0b768, 4); }
+    if (tile.type === 'fertile') { addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0xcfce6a, 10); addFlowerDots(groups.decor, tile, tile.pos, tile.height + .02); }
+    if (tile.type === 'grass') { addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0x9ab55b, 8); if (Math.random() > .55) addBushCluster(groups.decor, tile, tile.pos, tile.height + .02); }
+    if (tile.type === 'river') { addReedCluster(groups.decor, tile, tile.pos, tile.height + .02); addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0xcccd79, 5); }
+    if (tile.type === 'sacred') { addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0xe0d386, 5); addFlowerDots(groups.decor, tile, tile.pos, tile.height + .02); }
   });
 }
 
@@ -188,39 +190,59 @@ export function renderRoads(sceneCtx, state) {
   });
 }
 
-
 function seeded(tile, salt = 1) {
   const x = Math.sin(tile.q * 127.1 + tile.r * 311.7 + salt * 74.7) * 43758.5453123;
   return x - Math.floor(x);
 }
 
-function decorChoice(tile) {
-  const r = seeded(tile, 1);
-  if (tile.type === 'forest') return r > 0.52 ? 'pine' : 'trees';
-  if (tile.type === 'rock') return r > 0.78 ? 'gold' : 'rocks';
-  if (tile.type === 'hill') return r > 0.7 ? 'gold' : 'rocks';
-  if (tile.type === 'fertile') return r > 0.42 ? 'crops' : null;
-  if (tile.type === 'grass') return r > 0.83 ? 'logs' : null;
-  if (tile.type === 'sacred') return r > 0.55 ? 'cleric' : 'wizard';
-  return null;
+function decorChoices(tile) {
+  const choices = [];
+  const r1 = seeded(tile, 1);
+  const r2 = seeded(tile, 2);
+  const r3 = seeded(tile, 3);
+  if (tile.type === 'forest') {
+    choices.push(r1 > 0.45 ? 'pine' : 'trees');
+    if (r2 > 0.58) choices.push('logs');
+  } else if (tile.type === 'rock') {
+    choices.push(r1 > 0.72 ? 'gold' : 'rocks');
+    if (r2 > 0.66) choices.push('rocks');
+  } else if (tile.type === 'hill') {
+    choices.push(r1 > 0.76 ? 'gold' : 'rocks');
+    if (r2 > 0.62) choices.push('logs');
+  } else if (tile.type === 'fertile') {
+    choices.push('crops');
+    if (r2 > 0.55) choices.push('logs');
+  } else if (tile.type === 'grass') {
+    if (r1 > 0.68) choices.push('trees');
+    if (r2 > 0.78) choices.push('logs');
+  } else if (tile.type === 'river') {
+    if (r1 > 0.58) choices.push('crops');
+    if (r2 > 0.7) choices.push('trees');
+  } else if (tile.type === 'sacred') {
+    choices.push(r1 > 0.5 ? 'cleric' : 'wizard');
+    if (r3 > 0.56) choices.push('trees');
+  }
+  return choices.slice(0, GAME_CONFIG.decorPerTileSoftCap || 3);
 }
 
-async function spawnDecorModel(sceneCtx, tile, key) {
+async function spawnDecorModel(sceneCtx, tile, key, slot = 0) {
   if (!key || tile.buildingId) return;
   const cfg = DECOR_MODELS[key];
   if (!cfg) return;
-  const rand = seeded(tile, 3);
+  const rand = seeded(tile, 3 + slot * 7);
   try {
     const root = cfg.root === 'units' ? 'units' : 'decor';
     const model = root === 'units' ? await loadUnitModel(cfg.file) : await loadDecorModel(cfg.file);
     if (!model) return;
-    const scale = (cfg.scale || 0.7) * (0.88 + rand * 0.26);
+    const scale = (cfg.scale || 0.7) * (0.84 + rand * 0.3);
     model.scale.setScalar(scale);
     model.rotation.y = rand * Math.PI * 2;
+    const angle = rand * Math.PI * 2;
+    const radius = slot === 0 ? 0.12 : 0.34 + slot * 0.12;
     model.position.set(
-      tile.pos.x + (seeded(tile, 5) - 0.5) * 0.6,
+      tile.pos.x + Math.cos(angle) * radius,
       tile.height + (cfg.y || 0.02),
-      tile.pos.z + (seeded(tile, 7) - 0.5) * 0.6
+      tile.pos.z + Math.sin(angle) * radius
     );
     model.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; } });
     sceneCtx.groups.decor.add(model);
@@ -232,12 +254,13 @@ export async function populateDecorModels(sceneCtx, state) {
   const tasks = [];
   state.map.forEach((tile) => {
     if (tile.buildingId || tile.type === 'water') return;
-    const c = decorChoice(tile);
-    if (!c) return;
-    const densityRoll = seeded(tile, 11);
-    const minRoll = tile.type === 'forest' || tile.type === 'rock' || tile.type === 'hill' ? 0.14 : 1 - GAME_CONFIG.decorModelDensity;
-    if (densityRoll < minRoll) return;
-    tasks.push(spawnDecorModel(sceneCtx, tile, c));
+    const choices = decorChoices(tile);
+    choices.forEach((c, idx) => {
+      const densityRoll = seeded(tile, 11 + idx * 3);
+      const minRoll = tile.type === 'forest' || tile.type === 'rock' || tile.type === 'hill' ? 0.1 : 1 - GAME_CONFIG.decorModelDensity;
+      if (densityRoll < minRoll) return;
+      tasks.push(spawnDecorModel(sceneCtx, tile, c, idx));
+    });
   });
   await Promise.all(tasks);
 }
