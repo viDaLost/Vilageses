@@ -6,10 +6,14 @@ import { tileKey } from '../utils/helpers.js';
 const HEX_DIRS = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
 
 export function axialToWorld(q, r, size = GAME_CONFIG.hexSize) {
-  return new THREE.Vector3(size * Math.sqrt(3) * (q + r / 2), 0, size * 1.5 * r);
+  return new THREE.Vector3(
+    size * Math.sqrt(3) * (q + r / 2) * GAME_CONFIG.axialScaleX,
+    0,
+    size * 1.5 * r * GAME_CONFIG.axialScaleZ
+  );
 }
 
-export function createHexShape(size = GAME_CONFIG.hexSize * .92) {
+export function createHexShape(size = GAME_CONFIG.hexSize * 1.04) {
   const shape = new THREE.Shape();
   for (let i = 0; i < 6; i++) {
     const angle = Math.PI / 3 * i + Math.PI / 6;
@@ -47,16 +51,16 @@ export function generateWorld(state) {
         height = GAME_CONFIG.terrain.waterLevel + n1 * .25;
       } else if (n1 > GAME_CONFIG.terrain.rockLevel * .5) {
         type = 'rock';
-        height = 2.6 + n2 * .6;
+        height = 2.9 + n2 * .7;
       } else if (n1 > GAME_CONFIG.terrain.hillLevel * .5) {
         type = 'hill';
-        height = 1.4 + n2 * .4;
+        height = 1.7 + n2 * .5;
       } else if (n2 < GAME_CONFIG.terrain.forestBand) {
         type = 'forest';
-        height = .7 + n1 * .2;
+        height = .82 + n1 * .24;
       } else if (n2 > GAME_CONFIG.terrain.fertileBand) {
         type = 'fertile';
-        height = .35 + n1 * .18;
+        height = .48 + n1 * .22;
       }
       if (d < 4.6 && type !== 'water') {
         type = 'sacred';
@@ -64,6 +68,7 @@ export function generateWorld(state) {
       }
       const tile = {
         id: tileKey(q, r), q, r, type, pos, height,
+        noise: n2,
         buildingId: null,
         roadLinks: new Set(),
         selected: false,

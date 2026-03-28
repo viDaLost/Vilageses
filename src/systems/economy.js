@@ -1,7 +1,6 @@
-import { BUILDINGS, GAME_CONFIG, TECHS } from '../config.js';
+import { GAME_CONFIG, TECHS, WEATHER_TYPES } from '../config.js';
 import { computeBuildingYield } from './buildings.js';
-import { clamp, rand } from '../utils/helpers.js';
-import { WEATHER_TYPES, ERA_DATA } from '../config.js';
+import { clamp } from '../utils/helpers.js';
 
 export function applyRealTimeEconomy(state, dt) {
   let income = {
@@ -23,8 +22,12 @@ export function applyRealTimeEconomy(state, dt) {
   });
 
   const weather = WEATHER_TYPES[state.weather];
-  income.food *= weather.food;
-  income.gold *= state.techs.has('caravans') ? 1.06 : 1;
+  const productivity = clamp(.68 + state.resources.stability / 100 * .54, .45, 1.26);
+  const workerLoad = clamp(.58 + state.resources.workers / Math.max(1, state.buildings.length + 3) * .42, .55, 1.2);
+  income.food *= weather.food * productivity;
+  income.gold *= (state.techs.has('caravans') ? 1.06 : 1) * productivity;
+  income.wood *= workerLoad;
+  income.stone *= workerLoad;
   income.knowledge *= state.techs.has('archives') ? 1.05 : 1;
   if (state.techs.has('dynasty')) income.stability += .03;
 
@@ -43,12 +46,21 @@ export function applyRealTimeEconomy(state, dt) {
   const foodDrain = (state.resources.population * 0.045 + state.units.filter((u) => !u.hostile && u.type !== 'worker').length * 0.03) * dt;
   state.resources.food = Math.max(0, state.resources.food - foodDrain);
 
-  if (state.resources.food <= 0.5) state.resources.stability = clamp(state.resources.stability - dt * .75, 0, 100);
-  state.resources.threat = clamp(state.resources.threat + dt * (.04 + state.era * .01) - Math.min(0.03, income.defense * .003), 0, 100);
+  if (state.resources.food <= 0.5) {
+    state.resources.stability = clamp(state.resources.stability - dt * .95, 0, 100);
+    state.resources.prestige = Math.max(0, state.resources.prestige - dt * .12);
+  }
+  if (state.resources.stability < 28) {
+    state.resources.gold = Math.max(0, state.resources.gold - dt * .26);
+  }
+  if (state.resources.food < 12) state.resources.threat = clamp(state.resources.threat + dt * .18, 0, 100);
+  if (state.resources.stability > 82) state.resources.prestige += dt * .035;
+  state.resources.threat = clamp(state.resources.threat + dt * (.05 + state.era * .012) - Math.min(0.05, income.defense * .0042), 0, 100);
 }
 
 export function updateConstruction(state, dt) {
-  state.construction.forEach((job) => { job.progress += dt; });
+  const laborBoost = clamp(.85 + state.resources.workers / Math.max(1, state.construction.length + 5) * .22, .9, 1.55);
+  state.construction.forEach((job) => { job.progress += dt * laborBoost; });
 }
 
 export function collectFinishedConstruction(state) {
@@ -80,7 +92,7 @@ export function beginResearch(state, techId) {
 
 export function updateResearch(state, dt) {
   if (!state.techProgress) return null;
-  state.techProgress.progress += dt;
+  state.techProgress.progress += dt * (1 + state.buildings.filter((b) => b.type === 'academy').length * .08);
   if (state.techProgress.progress >= state.techProgress.duration) {
     const id = state.techProgress.id;
     state.techs.add(id);
