@@ -41,30 +41,30 @@ export function generateWorld(state) {
       const n2 = noise2D(q * .33 + 100, r * .33 + 100);
       const n3 = noise2D(q * .07 - 30, r * .07 + 47);
       let type = 'grass';
-      let height = n1 * 1.2;
+      let height = n1 * 0.35;
 
       if (Math.abs(q + r * .72 + n3 * .8) < 1.15 || (Math.abs(n2) < GAME_CONFIG.terrain.riverBand && d < 28)) {
         type = 'river';
-        height = -.10 + n1 * .08;
+        height = -.08 + n1 * .06;
       } else if (d > 31 && n1 < -.04) {
         type = 'water';
-        height = GAME_CONFIG.terrain.waterLevel + n1 * .25;
+        height = GAME_CONFIG.terrain.waterLevel - 0.02 + n1 * .04;
       } else if (n1 > GAME_CONFIG.terrain.rockLevel * .5) {
         type = 'rock';
-        height = 1.35 + n2 * .35;
+        height = 0.95 + n2 * .22;
       } else if (n1 > GAME_CONFIG.terrain.hillLevel * .5) {
         type = 'hill';
-        height = .78 + n2 * .24;
+        height = 0.52 + n2 * .16;
       } else if (n2 < GAME_CONFIG.terrain.forestBand) {
         type = 'forest';
-        height = .26 + n1 * .12;
+        height = 0.22 + n1 * .06;
       } else if (n2 > GAME_CONFIG.terrain.fertileBand) {
         type = 'fertile';
-        height = .16 + n1 * .08;
+        height = 0.1 + n1 * .05;
       }
       if (d < 4.6 && type !== 'water') {
         type = 'sacred';
-        height = .28;
+        height = 0.18;
       }
       const tile = {
         id: tileKey(q, r), q, r, type, pos, height,

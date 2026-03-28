@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BUILDINGS } from '../config.js';
 import { loadBuildingModel, makeFallbackMesh, loadDecorModel } from '../core/assets.js';
 import { getNeighbors, isTileInsideTerritory } from './world.js';
-import { clearDecorOnTile } from './renderWorld.js';
+import { clearDecorOnTile, sampleTileSurfaceY } from './renderWorld.js';
 
 let buildingId = 1;
 
@@ -151,7 +151,9 @@ function spawnFarmBeds(sceneCtx, tile, entity) {
         const radius = 0.7;
         model.scale.setScalar(0.42);
         model.rotation.y = angle + Math.PI / 2;
-        model.position.set(tile.pos.x + Math.cos(angle) * radius, tile.height + 0.03, tile.pos.z + Math.sin(angle) * radius);
+        const x = tile.pos.x + Math.cos(angle) * radius;
+        const z = tile.pos.z + Math.sin(angle) * radius;
+        model.position.set(x, sampleTileSurfaceY(tile, x, z) + 0.03, z);
         sceneCtx.groups.decor.add(model);
         beds.push(model);
       }
@@ -224,7 +226,8 @@ export async function finishConstruction(sceneCtx, state, job) {
 
   const placeholder = makeFallbackMesh(job.type === 'capital' ? 0xc9a45b : 0xa8844d);
   placeholder.scale.setScalar(scaleForBuilding(job.type, 1));
-  placeholder.position.y = tile.height + .08;
+  const surfaceY = sampleTileSurfaceY(tile);
+  placeholder.position.y = 0.08;
   entity.mesh.add(placeholder);
   entity.modelRoot = placeholder;
 
@@ -238,16 +241,16 @@ export async function finishConstruction(sceneCtx, state, job) {
   }).catch(() => {});
 
   const ring = selectionRing();
-  ring.position.y = tile.height + .05;
+  ring.position.y = 0.05;
   entity.mesh.add(ring);
   entity.selection = ring;
 
   const light = new THREE.PointLight(0xffcc88, job.type === 'capital' ? 1.2 : 0.82, job.type === 'capital' ? 9 : 6);
-  light.position.set(0, tile.height + 2.2, 0);
+  light.position.set(0, 2.2, 0);
   entity.mesh.add(light);
   entity.glow = light;
   entity.mesh.userData.tileId = tile.id;
-  entity.mesh.position.set(tile.pos.x, 0, tile.pos.z);
+  entity.mesh.position.set(tile.pos.x, surfaceY, tile.pos.z);
   sceneCtx.groups.buildings.add(entity.mesh);
 
   state.buildings.push(entity);
@@ -306,7 +309,8 @@ export function getCapital(state) {
 
 export function buildingCenter(state, building) {
   const tile = state.mapIndex.get(building.tileId);
-  return tile.pos.clone().setY(tile.height + .6);
+  const y = tile.surfaceY ?? tile.height;
+  return tile.pos.clone().setY(y + .6);
 }
 
 export function getBuildingStatus(state, building) {

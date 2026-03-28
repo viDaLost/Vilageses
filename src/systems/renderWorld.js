@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TERRAIN_TYPES, DECOR_MODELS, GAME_CONFIG } from '../config.js';
 import { loadDecorModel, loadUnitModel } from '../core/assets.js';
+import { buildTerrain, getTerrainPoint, getTerrainY } from './terrain.js';
 
 const terrainMaterials = new Map();
 const edgeMaterial = null;
@@ -38,15 +39,11 @@ function makeOrganicShape(tile) {
 }
 
 function makeHexMesh(tile) {
-  const depth = tile.type === 'water' ? .04 : .08 + Math.max(0, tile.height * .006);
-  const shape = makeOrganicShape(tile);
-  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+  const geo = new THREE.CircleGeometry(GAME_CONFIG.hexSize * 0.82, 18);
   geo.rotateX(-Math.PI / 2);
-  geo.translate(tile.pos.x, tile.height - depth, tile.pos.z);
-  const mesh = new THREE.Mesh(geo, getTerrainMaterial(tile.type));
-  mesh.receiveShadow = true;
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.001, depthWrite: false }));
+  mesh.position.set(tile.pos.x, tile.surfaceY + 0.02, tile.pos.z);
   mesh.userData.tileId = tile.id;
-  mesh.rotation.y = tile.noise * .035;
   return mesh;
 }
 
@@ -70,11 +67,7 @@ export function clearDecorOnTile(sceneCtx, tile) {
 }
 
 export function sampleTileSurfaceY(tile, x = tile.pos.x, z = tile.pos.z) {
-  if (!tile?.mesh) return tile?.height || 0;
-  raycaster.set(new THREE.Vector3(x, tile.height + 8, z), down);
-  const hits = raycaster.intersectObject(tile.mesh, true);
-  if (hits.length) return hits[0].point.y;
-  return tile.height;
+  return getTerrainY(x, z);
 }
 
 function decorChoices(tile) {
@@ -110,7 +103,8 @@ function decorChoices(tile) {
       if (r(2) > .72) list.push('dirtSingle');
       break;
     case 'sacred':
-      list.push(r(1) > .5 ? 'wizard' : 'cleric', 'flowerYellow');
+      list.push('flowerYellow', r(2) > .55 ? 'bushSmall' : 'grass');
+      if (r(3) > .65) list.push('fence');
       break;
   }
   return list.filter(Boolean).slice(0, GAME_CONFIG.decorPerTileSoftCap || 4);
@@ -130,10 +124,12 @@ export function renderTiles(sceneCtx, state) {
   ring.name = 'territory-ring';
   groups.overlays.add(ring);
 
+  buildTerrain(sceneCtx, state);
+
   state.map.forEach((tile) => {
     tile.decorMeshes = [];
     const mesh = makeHexMesh(tile);
-    groups.tiles.add(mesh);
+    groups.overlays.add(mesh);
     tile.mesh = mesh;
   });
 }
@@ -157,8 +153,8 @@ export function renderRoads(sceneCtx, state) {
     const len = dir.length();
     const midX = (a.pos.x + b.pos.x) / 2;
     const midZ = (a.pos.z + b.pos.z) / 2;
-    const y = (sampleTileSurfaceY(a, a.pos.x, a.pos.z) + sampleTileSurfaceY(b, b.pos.x, b.pos.z)) / 2 + 0.04;
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(.28, .04, len), roadMat);
+    const y = (sampleTileSurfaceY(a, a.pos.x, a.pos.z) + sampleTileSurfaceY(b, b.pos.x, b.pos.z)) / 2 + 0.015;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(.14, .02, len), roadMat);
     mesh.position.set(midX, y, midZ);
     mesh.lookAt(b.pos.x, y, b.pos.z);
     mesh.rotateY(Math.PI);
@@ -182,9 +178,10 @@ async function spawnDecorModel(sceneCtx, tile, key, slot = 0) {
     const radius = slot === 0 ? 0.18 : 0.35 + slot * 0.16;
     const x = tile.pos.x + Math.cos(angle) * radius;
     const z = tile.pos.z + Math.sin(angle) * radius;
-    const y = sampleTileSurfaceY(tile, x, z) + (cfg.y || 0.0);
-    model.scale.setScalar((cfg.scale || 0.018) * (0.88 + rand * 0.22));
-    model.position.set(x, y, z);
+    const point = getTerrainPoint(x, z);
+    const y = point.y + (cfg.y || 0.0);
+    model.scale.setScalar((cfg.scale || 0.014) * (0.88 + rand * 0.18));
+    model.position.set(point.x, y, point.z);
     model.rotation.y = rand * Math.PI * 2;
     model.traverse((obj) => {
       if (obj.isMesh || obj.isSkinnedMesh) {

@@ -5,6 +5,7 @@ import { getCapital, buildingCenter } from './buildings.js';
 import { dist2 } from '../utils/helpers.js';
 import { spawnCollapse } from './combat.js';
 import { attachUnitModel } from '../core/assets.js';
+import { getTerrainY } from './terrain.js';
 
 let unitId = 1;
 
@@ -189,9 +190,12 @@ export function spawnUnit(sceneCtx, state, type, pos, target = null) {
     workTimer: 0,
     idleTimer: 0,
     homeBuildingId: null,
+    taskPhase: 'patrol',
+    pauseAtBuilding: 0,
+    baseY: pos.y,
   };
   entity.mesh.position.copy(entity.pos);
-  entity.mesh.position.y += .8;
+  entity.mesh.position.y += .18;
   sceneCtx.groups.units.add(entity.mesh);
   state.units.push(entity);
   if (!entity.hostile) state.stats.armyUnits = state.units.filter((u) => !u.hostile && u.type !== 'worker').length;
@@ -286,12 +290,14 @@ function chooseNewBuildingTask(unit, state) {
   const list = buildingTargetsFor(unit, state);
   if (!list.length) return null;
   const current = unit.homeBuildingId;
-  const pool = list.filter((b) => b.id !== current);
-  const targetBuilding = (pool.length ? pool : list)[Math.floor(Math.random() * (pool.length ? pool.length : list.length))];
+  const currentPos = unit.pos;
+  const shuffled = [...list].sort(() => Math.random() - 0.5);
+  let targetBuilding = shuffled.find((b) => b.id !== current && currentPos.distanceTo(buildingCenter(state, b)) > 2.2);
+  if (!targetBuilding) targetBuilding = shuffled.find((b) => currentPos.distanceTo(buildingCenter(state, b)) > 1.2) || shuffled[0];
   unit.homeBuildingId = targetBuilding.id;
   const center = buildingCenter(state, targetBuilding);
   const angle = Math.random() * Math.PI * 2;
-  const radius = targetBuilding.type === 'capital' ? 1.8 : 1.05;
+  const radius = targetBuilding.type === 'capital' ? 2.2 : 1.35;
   return new THREE.Vector3(center.x + Math.cos(angle) * radius, center.y, center.z + Math.sin(angle) * radius);
 }
 
@@ -336,25 +342,36 @@ export function updateUnits(sceneCtx, state, dt, notify) {
           if (enemy.hp <= 0) cleanupDeadUnit(sceneCtx, state, enemy, state.units.indexOf(enemy));
         }
       } else {
-        unit.idleTimer -= dt;
-        if (!unit.target || unit.idleTimer <= 0) {
+        unit.pauseAtBuilding = Math.max(0, unit.pauseAtBuilding - dt);
+        const arrived = !!unit.target && unit.pos.distanceTo(unit.target) < 0.55;
+        if (!unit.target) {
           unit.target = chooseNewBuildingTask(unit, state) || (capitalTile ? capitalTile.pos.clone() : null);
-          unit.idleTimer = 4 + Math.random() * 3;
+        } else if (arrived && unit.pauseAtBuilding <= 0) {
+          unit.pauseAtBuilding = 1.0 + Math.random() * 1.4;
         }
-        targetPos = unit.target;
-      }
-    } else {
-      unit.workTimer -= dt;
-      if (unit.workTimer > 0) {
-        targetPos = null;
-      } else {
-        if (!unit.target || unit.pos.distanceTo(unit.target) < 0.45) {
-          unit.workTimer = 1.4 + Math.random() * 2.1;
-          unit.target = chooseNewBuildingTask(unit, state) || (capitalTile ? capitalTile.pos.clone() : null);
+        if (unit.pauseAtBuilding > 0) {
           targetPos = null;
+          if (unit.pauseAtBuilding <= 0.02) unit.target = chooseNewBuildingTask(unit, state) || (capitalTile ? capitalTile.pos.clone() : null);
         } else {
           targetPos = unit.target;
         }
+      }
+    } else {
+      const arrived = !!unit.target && unit.pos.distanceTo(unit.target) < 0.65;
+      if (!unit.target) {
+        unit.target = chooseNewBuildingTask(unit, state) || (capitalTile ? capitalTile.pos.clone() : null);
+      }
+      if (arrived && unit.workTimer <= 0) {
+        unit.workTimer = 1.6 + Math.random() * 2.4;
+      }
+      if (unit.workTimer > 0) {
+        unit.workTimer -= dt;
+        targetPos = null;
+        if (unit.workTimer <= 0) {
+          unit.target = chooseNewBuildingTask(unit, state) || (capitalTile ? capitalTile.pos.clone() : null);
+        }
+      } else {
+        targetPos = unit.target;
       }
     }
 
@@ -371,7 +388,8 @@ export function updateUnits(sceneCtx, state, dt, notify) {
       }
     }
 
-    unit.mesh.position.set(unit.pos.x, unit.pos.y + .8, unit.pos.z);
+    unit.baseY = getTerrainY(unit.pos.x, unit.pos.z);
+    unit.mesh.position.set(unit.pos.x, unit.baseY + .02, unit.pos.z);
     const ringOpacity = unit.hostile ? .38 : .28;
     unit.mesh.userData.ring.material.opacity = ringOpacity + unit.attackFlash * .4 + unit.hitFlash * .3;
     unit.mesh.userData.ring.material.color.setHex(unit.hostile ? 0xff7c63 : 0xffd66b);
