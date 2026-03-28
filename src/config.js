@@ -1,9 +1,9 @@
 export const GAME_CONFIG = {
-  saveKey: 'empire-east-3d-rts-save-v9',
+  saveKey: 'empire-east-3d-rts-save-v10',
   mapRadius: 13,
-  hexSize: 1.72,
-  axialScaleX: 0.985,
-  axialScaleZ: 0.98,
+  hexSize: 1.68,
+  axialScaleX: 0.97,
+  axialScaleZ: 0.965,
   simBaseSpeed: 1,
   dayDuration: 180,
   seasonDuration: 540,
