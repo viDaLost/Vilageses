@@ -1,5 +1,5 @@
 export const GAME_CONFIG = {
-  saveKey: 'empire-east-3d-rts-save-v13-kenney-terrain-units',
+  saveKey: 'empire-east-3d-rts-save-v16-terrainmesh',
   mapRadius: 13,
   hexSize: 1.72,
   axialScaleX: 0.985,
@@ -245,18 +245,18 @@ export const DECOR_MODELS = {
   dirtSingle: { file: 'crops_dirtSingle.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
   lily: { file: 'lily_small.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
   fence: { file: 'fence_simple.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
-  cleric: { file: 'cleric.gltf', scale: 0.75, y: 0.02, root: 'units' },
-  wizard: { file: 'wizard.gltf', scale: 0.78, y: 0.02, root: 'units' }
+  cleric: { file: 'cleric.gltf', targetHeight: 0.55, y: 0.0, root: 'units' },
+  wizard: { file: 'wizard.gltf', targetHeight: 0.55, y: 0.0, root: 'units' }
 };
 
 export const UNIT_MODEL_MAP = {
-  worker: { file: 'monk.gltf', scale: 0.12, y: -0.66, rotY: 0, faceOffset: 3.141592653589793 },
-  militia: { file: 'warrior.gltf', scale: 0.13, y: -0.69, rotY: 0, faceOffset: 3.141592653589793 },
-  swordsman: { file: 'rogue.gltf', scale: 0.13, y: -0.69, rotY: 0, faceOffset: 3.141592653589793 },
-  raider: { file: 'rogue.gltf', scale: 0.13, y: -0.69, rotY: 0, faceOffset: 3.141592653589793 },
-  raiderArcher: { file: 'ranger.gltf', scale: 0.125, y: -0.68, rotY: 0, faceOffset: 3.141592653589793 },
-  brute: { file: 'warrior.gltf', scale: 0.145, y: -0.70, rotY: 0, faceOffset: 3.141592653589793 },
-  wolfRider: { file: 'wizard.gltf', scale: 0.14, y: -0.69, rotY: 0, faceOffset: 3.141592653589793 },
+  worker: { file: 'monk.gltf', targetHeight: 0.2, y: 0.0, rotY: 0, faceOffset: 3.141592653589793 },
+  militia: { file: 'warrior.gltf', targetHeight: 0.22, y: 0.0, rotY: 0, faceOffset: 3.141592653589793 },
+  swordsman: { file: 'rogue.gltf', targetHeight: 0.21, y: 0.0, rotY: 0, faceOffset: 3.141592653589793 },
+  raider: { file: 'rogue.gltf', targetHeight: 0.21, y: 0.0, rotY: 0, faceOffset: 3.141592653589793 },
+  raiderArcher: { file: 'ranger.gltf', targetHeight: 0.21, y: 0.0, rotY: 0, faceOffset: 3.141592653589793 },
+  brute: { file: 'warrior.gltf', targetHeight: 0.24, y: 0.0, rotY: 0, faceOffset: 3.141592653589793 },
+  wolfRider: { file: 'wizard.gltf', targetHeight: 0.23, y: 0.0, rotY: 0, faceOffset: 3.141592653589793 },
 };
 
 export const UNIT_VISUALS = {

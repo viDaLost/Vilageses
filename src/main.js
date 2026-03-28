@@ -14,6 +14,7 @@ import { GAME_CONFIG, BUILDINGS, UNITS } from './config.js';
 import { createInitialState } from './state.js';
 import { createScene } from './core/scene.js';
 import { generateWorld, getNeighbors, isTileInsideTerritory } from './systems/world.js';
+import { getTerrainY } from './systems/terrain.js';
 import { renderTiles, renderRoads, clearDecorOnTile, populateDecorModels, updateTerritoryOverlay } from './systems/renderWorld.js';
 import { setupHud, updateHud } from './ui/hud.js';
 import { drawMinimap } from './ui/minimap.js';
@@ -73,7 +74,7 @@ async function bootstrap() {
   setLoading(10, 'Генерация рельефа…');
   generateWorld(state);
 
-  setLoading(30, 'Загрузка нового ландшафта Kenney…');
+  setLoading(30, 'Построение terrain mesh…');
   renderTiles(sceneCtx, state);
 
   setLoading(48, 'Размещение столицы…');
@@ -448,7 +449,7 @@ function pointerGhostMove(e) {
   if (!hits.length) return;
   const tile = state.map.find((t) => t.mesh === hits[0].object);
   if (!tile) return;
-  ghostMesh.position.set(tile.pos.x, tile.height + .16, tile.pos.z);
+  ghostMesh.position.set(tile.pos.x, getTerrainY(tile.pos.x, tile.pos.z) + .12, tile.pos.z);
   const ok = canPlaceBuilding(state, state.selectedBuildType, tile);
   ghostMesh.traverse((obj) => {
     if (obj.isMesh && obj.material) {
