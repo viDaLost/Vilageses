@@ -1,9 +1,9 @@
 export const GAME_CONFIG = {
-  saveKey: 'empire-east-3d-rts-save-v10',
+  saveKey: 'empire-east-3d-rts-save-v11-kenney',
   mapRadius: 13,
-  hexSize: 1.68,
-  axialScaleX: 0.97,
-  axialScaleZ: 0.965,
+  hexSize: 1.72,
+  axialScaleX: 0.985,
+  axialScaleZ: 0.98,
   simBaseSpeed: 1,
   dayDuration: 180,
   seasonDuration: 540,
@@ -54,14 +54,14 @@ export const WEATHER_TYPES = {
 };
 
 export const TERRAIN_TYPES = {
-  water: { name: 'Вода', buildable: false, color: 0x6ea3d3, tint: 0x7eb3de },
-  river: { name: 'Речной берег', buildable: true, color: 0x7fb2dd, tint: 0xa4d0ef },
-  fertile: { name: 'Плодородная земля', buildable: true, color: 0x93c65d, tint: 0xb2de79 },
-  grass: { name: 'Равнина', buildable: true, color: 0x6f9c4a, tint: 0x86b65f },
-  forest: { name: 'Лес', buildable: true, color: 0x275d25, tint: 0x357737 },
-  hill: { name: 'Холм', buildable: true, color: 0x8d7852, tint: 0xb49767 },
-  rock: { name: 'Скала', buildable: true, color: 0x7f807d, tint: 0xa5a6a2 },
-  sacred: { name: 'Священная земля', buildable: true, color: 0xc8ad63, tint: 0xe1cd85 }
+  water: { name: 'Вода', buildable: false, color: 0x92c9ea, tint: 0xb7e1f3 },
+  river: { name: 'Речной берег', buildable: true, color: 0xa7d6ef, tint: 0xd2eef9 },
+  fertile: { name: 'Плодородная земля', buildable: true, color: 0xa8d86a, tint: 0xcaee91 },
+  grass: { name: 'Равнина', buildable: true, color: 0x86bb58, tint: 0xa2d274 },
+  forest: { name: 'Лес', buildable: true, color: 0x4f8b41, tint: 0x6aa95a },
+  hill: { name: 'Холм', buildable: true, color: 0xb69869, tint: 0xcfb587 },
+  rock: { name: 'Скала', buildable: true, color: 0xb0aca2, tint: 0xd4cec2 },
+  sacred: { name: 'Священная земля', buildable: true, color: 0xe0ca83, tint: 0xf1e2a6 }
 };
 
 export const BUILDINGS = {
@@ -224,12 +224,27 @@ export const UNITS = {
 
 
 export const DECOR_MODELS = {
-  trees: { file: 'trees.glb', scale: 0.72, y: 0.02 },
-  pine: { file: 'pine-trees.glb', scale: 0.72, y: 0.02 },
-  rocks: { file: 'rocks.glb', scale: 0.6, y: 0.03 },
-  logs: { file: 'logs.glb', scale: 0.62, y: 0.02 },
-  crops: { file: 'crops.glb', scale: 0.72, y: 0.02 },
-  gold: { file: 'gold-rocks.glb', scale: 0.62, y: 0.03 },
+  oak: { file: 'tree_oak.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  tree: { file: 'tree_default.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  pine: { file: 'tree_pineTallA_detailed.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  pineRound: { file: 'tree_pineRoundC.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  rockLarge: { file: 'rock_largeA.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  rockLargeB: { file: 'rock_largeC.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  rockSmall: { file: 'rock_smallA.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  rockFlat: { file: 'rock_smallFlatA.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  bush: { file: 'plant_bushDetailed.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  bushSmall: { file: 'plant_bushSmall.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  grass: { file: 'grass_large.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  flowerYellow: { file: 'flower_yellowA.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  flowerRed: { file: 'flower_redA.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  logLarge: { file: 'log_large.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  logStack: { file: 'log_stack.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  wheat: { file: 'crops_wheatStageB.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  corn: { file: 'crops_cornStageD.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  dirtRow: { file: 'crops_dirtRow.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  dirtSingle: { file: 'crops_dirtSingle.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  lily: { file: 'lily_small.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
+  fence: { file: 'fence_simple.fbx', scale: 0.018, y: 0.0, root: 'kenney' },
   cleric: { file: 'cleric.gltf', scale: 0.75, y: 0.02, root: 'units' },
   wizard: { file: 'wizard.gltf', scale: 0.78, y: 0.02, root: 'units' }
 };
