@@ -25,7 +25,7 @@ import { updateSelection } from './ui/selection.js';
 import { setupInput } from './core/input.js';
 import { canPlaceBuilding, hasCost, payCost, placeConstruction, finishConstruction, getBuildingById, getBuildingOnTile, getCapital, startUpgrade, repairBuilding, destroyBuilding, createGhostBuildingMesh } from './systems/buildings.js';
 import { applyRealTimeEconomy, updateConstruction, collectFinishedConstruction, updateEra, updateObjectives, updateResearch } from './systems/economy.js';
-import { autoSpawnWorkers, queueTraining, updateTraining, updateUnits } from './systems/units.js';
+import { autoSpawnWorkers, queueTraining, updateTraining, updateUnits, spawnUnit } from './systems/units.js';
 import { updateDefense, updateProjectiles, spawnCollapse } from './systems/combat.js';
 import { maybeChangeWeather, updateEnemyWaves, updateEnvironmentState } from './systems/events.js';
 import { saveGame, clearSave } from './systems/persistence.js';
@@ -38,6 +38,7 @@ let ghostMesh = null;
 let lastTime = performance.now();
 let constructionDustTimer = 0;
 let emergencyReleased = false;
+
 function emergencyRelease() {
   if (emergencyReleased) return;
   emergencyReleased = true;
@@ -131,6 +132,12 @@ async function spawnCapital() {
   state.resources.population = 12;
   state.resources.workers = 5;
   capital.level = 1;
+
+  // ФИЗИЧЕСКИ СОЗДАЕМ 5 РАБОЧИХ ВОКРУГ СТОЛИЦЫ
+  for (let i = 0; i < 5; i++) {
+    const randomPos = new THREE.Vector3(center.pos.x + (Math.random() - 0.5) * 1.5, center.height, center.pos.z + (Math.random() - 0.5) * 1.5);
+    spawnUnit(sceneCtx, state, 'worker', randomPos, null);
+  }
 
   const neighbors = getNeighbors(state, center).filter((t) => t.type !== 'water');
   for (const tile of neighbors) {
@@ -579,7 +586,6 @@ function updateConstructionOverlays() {
   });
 }
 
-
 function ensureHealthEl(id) {
   const wrap = $('#health-overlays');
   let el = wrap.querySelector(`[data-health-id="${id}"]`);
@@ -661,12 +667,11 @@ async function stepSimulation(dt) {
     updateTerritoryOverlay(sceneCtx, state);
     notify('Границы державы расширились');
   }
-  
   spawnConstructionDust(dt);
 
   // Теперь units.js сам управляет своим временем!
   autoSpawnWorkers(sceneCtx, state, dt, notify);
-  
+
   if (state.seasonTime >= GAME_CONFIG.seasonDuration) {
     state.seasonTime = 0;
     maybeChangeWeather(state);
