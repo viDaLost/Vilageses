@@ -144,6 +144,7 @@ function makeUnitMesh(type) {
 
   const mapping = UNIT_MODEL_MAP[type];
   if (mapping) {
+    group.userData.facingOffset = mapping.faceOffset || 0;
     attachUnitModel(group, mapping).then((loaded) => {
       if (!loaded) return;
       const { model, animations } = loaded;
@@ -322,7 +323,7 @@ export function updateUnits(sceneCtx, state, dt, notify) {
       if (len > .18) {
         dir.normalize();
         unit.pos.addScaledVector(dir, unit.speed * dt);
-        unit.mesh.lookAt(unit.pos.x + dir.x, unit.mesh.position.y, unit.pos.z + dir.z);
+        unit.mesh.rotation.y = Math.atan2(dir.x, dir.z) + (unit.mesh.userData.facingOffset || 0);
         unit.stepPhase += dt * unit.speed * vis.bobSpeed;
         moved = true;
       }
