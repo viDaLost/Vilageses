@@ -1,7 +1,7 @@
 export const GAME_CONFIG = {
-  saveKey: 'empire-east-3d-rts-save-v5',
+  saveKey: 'empire-east-3d-rts-save-v7',
   mapRadius: 13,
-  hexSize: 1.63,
+  hexSize: 1.68,
   axialScaleX: 0.985,
   axialScaleZ: 0.98,
   simBaseSpeed: 1,
@@ -11,8 +11,10 @@ export const GAME_CONFIG = {
   workerSpawnEvery: 22,
   enemyWaveEvery: 48,
   enemyCampCount: 5,
+  decorModelDensity: 0.38,
   maxPopulationSoft: 60,
   doubleTapMs: 340,
+  decorPerTileSoftCap: 3,
   terrain: {
     waterLevel: -1.3,
     riverBand: 0.085,
@@ -217,6 +219,38 @@ export const UNITS = {
     name: 'Волк-налётчик', icon: '🐺', trainTime: 0,
     cost: {}, speed: 2.7, hp: 52, attack: 7, range: .9, hostile: true, role: 'melee', faction: 'beasts'
   }
+};
+
+
+export const DECOR_MODELS = {
+  trees: { file: 'trees.glb', scale: 0.72, y: 0.02 },
+  pine: { file: 'pine-trees.glb', scale: 0.72, y: 0.02 },
+  rocks: { file: 'rocks.glb', scale: 0.6, y: 0.03 },
+  logs: { file: 'logs.glb', scale: 0.62, y: 0.02 },
+  crops: { file: 'crops.glb', scale: 0.72, y: 0.02 },
+  gold: { file: 'gold-rocks.glb', scale: 0.62, y: 0.03 },
+  cleric: { file: 'cleric.gltf', scale: 0.75, y: 0.02, root: 'units' },
+  wizard: { file: 'wizard.gltf', scale: 0.78, y: 0.02, root: 'units' }
+};
+
+export const UNIT_MODEL_MAP = {
+  worker: { file: 'monk.gltf', scale: 0.74, y: -0.42, rotY: Math.PI },
+  militia: { file: 'warrior.gltf', scale: 0.84, y: -0.42, rotY: Math.PI },
+  swordsman: { file: 'rogue.gltf', scale: 0.78, y: -0.42, rotY: Math.PI },
+  raider: { file: 'rogue.gltf', scale: 0.82, y: -0.42, rotY: Math.PI },
+  raiderArcher: { file: 'ranger.gltf', scale: 0.86, y: -0.42, rotY: Math.PI },
+  brute: { file: 'warrior.gltf', scale: 1.04, y: -0.42, rotY: Math.PI },
+  wolfRider: { file: 'wizard.gltf', scale: 0.94, y: -0.42, rotY: Math.PI },
+};
+
+export const UNIT_VISUALS = {
+  worker: { bounce: 0.02, bobSpeed: 5.5, lean: 0.08, weapon: 'staff', ring: 0x7ac7ff, silhouette: 0x7ba06d },
+  militia: { bounce: 0.03, bobSpeed: 7.2, lean: 0.16, weapon: 'sword', ring: 0xffd66b, silhouette: 0xa88a5a },
+  swordsman: { bounce: 0.032, bobSpeed: 7.8, lean: 0.18, weapon: 'dual', ring: 0xffd66b, silhouette: 0x8f6f57 },
+  raider: { bounce: 0.034, bobSpeed: 8.4, lean: 0.2, weapon: 'blade', ring: 0xff7e63, silhouette: 0x8d4437 },
+  raiderArcher: { bounce: 0.024, bobSpeed: 6.6, lean: 0.1, weapon: 'bow', ring: 0xff9166, silhouette: 0x78624a },
+  brute: { bounce: 0.018, bobSpeed: 4.8, lean: 0.07, weapon: 'axe', ring: 0xff6a57, silhouette: 0x625a58 },
+  wolfRider: { bounce: 0.04, bobSpeed: 8.8, lean: 0.22, weapon: 'staff', ring: 0xff985f, silhouette: 0x5c4b39 },
 };
 
 export const TECHS = [
