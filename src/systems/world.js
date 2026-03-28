@@ -45,26 +45,26 @@ export function generateWorld(state) {
 
       if (Math.abs(q + r * .72 + n3 * .8) < 1.15 || (Math.abs(n2) < GAME_CONFIG.terrain.riverBand && d < 28)) {
         type = 'river';
-        height = -.18 + n1 * .18;
+        height = -.10 + n1 * .08;
       } else if (d > 31 && n1 < -.04) {
         type = 'water';
         height = GAME_CONFIG.terrain.waterLevel + n1 * .25;
       } else if (n1 > GAME_CONFIG.terrain.rockLevel * .5) {
         type = 'rock';
-        height = 2.9 + n2 * .7;
+        height = 1.35 + n2 * .35;
       } else if (n1 > GAME_CONFIG.terrain.hillLevel * .5) {
         type = 'hill';
-        height = 1.7 + n2 * .5;
+        height = .78 + n2 * .24;
       } else if (n2 < GAME_CONFIG.terrain.forestBand) {
         type = 'forest';
-        height = .82 + n1 * .24;
+        height = .26 + n1 * .12;
       } else if (n2 > GAME_CONFIG.terrain.fertileBand) {
         type = 'fertile';
-        height = .48 + n1 * .22;
+        height = .16 + n1 * .08;
       }
       if (d < 4.6 && type !== 'water') {
         type = 'sacred';
-        height = .82;
+        height = .28;
       }
       const tile = {
         id: tileKey(q, r), q, r, type, pos, height,

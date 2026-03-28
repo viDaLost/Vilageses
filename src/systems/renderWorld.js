@@ -1,20 +1,22 @@
 import * as THREE from 'three';
 import { TERRAIN_TYPES, DECOR_MODELS, GAME_CONFIG } from '../config.js';
 import { loadDecorModel, loadUnitModel } from '../core/assets.js';
-import { createHexShape, isTileInsideTerritory } from './world.js';
+import { isTileInsideTerritory } from './world.js';
 
 const terrainMaterials = new Map();
-const edgeMaterial = new THREE.MeshStandardMaterial({ color: 0x3a2416, roughness: 1, metalness: 0 });
+const hiddenTileMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
 
 function getTerrainMaterial(type) {
   if (terrainMaterials.has(type)) return terrainMaterials.get(type);
   const cfg = TERRAIN_TYPES[type];
   const mat = new THREE.MeshStandardMaterial({
     color: cfg.color,
-    roughness: type === 'river' || type === 'water' ? .18 : .94,
-    metalness: type === 'water' ? .08 : 0,
-    emissive: type === 'water' ? 0x285274 : 0x000000,
-    emissiveIntensity: type === 'water' ? .24 : 0
+    roughness: type === 'river' || type === 'water' ? .26 : .97,
+    metalness: type === 'water' ? .05 : 0,
+    emissive: type === 'water' ? 0x1f4f7a : 0x000000,
+    emissiveIntensity: type === 'water' ? .14 : 0,
+    transparent: true,
+    opacity: type === 'water' ? .82 : .92,
   });
   terrainMaterials.set(type, mat);
   return mat;
@@ -26,36 +28,82 @@ function tint(color, amt) {
   return c;
 }
 
-function makeOrganicShape(tile) {
-  const size = GAME_CONFIG.hexSize * 1.1;
-  const shape = new THREE.Shape();
-  for (let i = 0; i < 12; i++) {
-    const step = i / 12;
-    const sector = Math.floor(step * 6);
-    const local = (step * 6) - sector;
-    const angle = Math.PI / 3 * sector + Math.PI / 6 + local * (Math.PI / 3);
-    const wobble = 0.96 + Math.sin((tile.q * 11 + tile.r * 7 + i) * 0.7) * 0.03;
-    const radius = size * wobble;
-    const x = Math.cos(angle) * radius;
-    const y = Math.sin(angle) * radius;
-    if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
-  }
-  shape.closePath();
-  return shape;
+function seeded(tile, salt = 1) {
+  const x = Math.sin(tile.q * 127.1 + tile.r * 311.7 + salt * 74.7) * 43758.5453123;
+  return x - Math.floor(x);
 }
 
-function makeHexMesh(tile) {
-  const depth = tile.type === 'water' ? .28 : .72 + Math.max(0, tile.height * .06);
-  const shape = makeOrganicShape(tile);
-  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelSize: .03, bevelThickness: .03, bevelSegments: 1 });
-  geo.rotateX(-Math.PI / 2);
-  geo.translate(tile.pos.x, tile.height - depth, tile.pos.z);
-  const mesh = new THREE.Mesh(geo, [edgeMaterial, getTerrainMaterial(tile.type)]);
-  mesh.receiveShadow = true;
-  mesh.castShadow = false;
+function terrainColorForTile(tile) {
+  const c = new THREE.Color(TERRAIN_TYPES[tile.type].color);
+  c.offsetHSL(0, 0, tile.noise * 0.03);
+  return c;
+}
+
+function createHiddenPickMesh(tile) {
+  const geo = new THREE.CylinderGeometry(GAME_CONFIG.hexSize * 0.88, GAME_CONFIG.hexSize * 0.88, 0.25, 6);
+  const mesh = new THREE.Mesh(geo, hiddenTileMaterial);
+  mesh.position.set(tile.pos.x, tile.height + 0.14, tile.pos.z);
+  mesh.rotation.y = Math.PI / 6;
   mesh.userData.tileId = tile.id;
-  mesh.rotation.y = tile.noise * .045;
   return mesh;
+}
+
+function buildTerrainSurface(state) {
+  const size = 110;
+  const seg = 120;
+  const geo = new THREE.PlaneGeometry(size, size, seg, seg);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  const colors = [];
+  const tmp = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    tmp.fromBufferAttribute(pos, i);
+    let best = null;
+    let bestD = Infinity;
+    let second = null;
+    let secondD = Infinity;
+    for (const tile of state.map) {
+      const dx = tmp.x - tile.pos.x;
+      const dz = tmp.z - tile.pos.z;
+      const d = dx * dx + dz * dz;
+      if (d < bestD) {
+        second = best; secondD = bestD;
+        best = tile; bestD = d;
+      } else if (d < secondD) {
+        second = tile; secondD = d;
+      }
+    }
+    const w1 = 1 / Math.max(0.0001, bestD);
+    const w2 = second ? 1 / Math.max(0.0001, secondD) : 0;
+    const h = ((best?.height || 0) * w1 + (second?.height || 0) * w2) / (w1 + w2 || 1);
+    pos.setY(i, h - 0.34);
+    const c1 = terrainColorForTile(best || state.map[0]);
+    const c2 = second ? terrainColorForTile(second) : c1.clone();
+    c1.lerp(c2, 0.35);
+    c1.offsetHSL(0, -0.03, -0.04);
+    colors.push(c1.r, c1.g, c1.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.receiveShadow = true;
+  mesh.position.y = -0.02;
+  return mesh;
+}
+
+function addDistantMountains(group) {
+  group.clear();
+  const fogMat = new THREE.MeshStandardMaterial({ color: 0x6a5d53, roughness: 1, transparent: true, opacity: .96 });
+  for (let i = 0; i < 30; i++) {
+    const angle = (i / 22) * Math.PI * 2;
+    const radius = 46 + (i % 4) * 4 + Math.random() * 3;
+    const h = 10 + Math.random() * 14;
+    const mountain = new THREE.Mesh(new THREE.ConeGeometry(5 + Math.random() * 5, h, 6 + Math.floor(Math.random() * 3)), fogMat.clone());
+    mountain.position.set(Math.cos(angle) * radius, -1 + h / 2, Math.sin(angle) * radius);
+    mountain.castShadow = true;
+    group.add(mountain);
+  }
 }
 
 function addMesh(group, tile, mesh) {
@@ -132,20 +180,6 @@ function addReedCluster(group, tile, pos, y) {
   }
 }
 
-function addDistantMountains(group) {
-  group.clear();
-  const fogMat = new THREE.MeshStandardMaterial({ color: 0x5d5147, roughness: 1, transparent: true, opacity: .96 });
-  for (let i = 0; i < 32; i++) {
-    const angle = (i / 22) * Math.PI * 2;
-    const radius = 44 + (i % 4) * 4 + Math.random() * 3;
-    const h = 10 + Math.random() * 14;
-    const mountain = new THREE.Mesh(new THREE.ConeGeometry(5 + Math.random() * 5, h, 6 + Math.floor(Math.random() * 3)), fogMat.clone());
-    mountain.position.set(Math.cos(angle) * radius, -1 + h / 2, Math.sin(angle) * radius);
-    mountain.castShadow = true;
-    group.add(mountain);
-  }
-}
-
 export function clearDecorOnTile(sceneCtx, tile) {
   if (!tile?.decorMeshes?.length) return;
   for (const mesh of tile.decorMeshes) sceneCtx.groups.decor.remove(mesh);
@@ -154,12 +188,15 @@ export function clearDecorOnTile(sceneCtx, tile) {
 
 export function renderTiles(sceneCtx, state) {
   const { groups } = sceneCtx;
+  groups.terrain.clear();
   groups.tiles.clear();
   groups.decor.clear();
   groups.overlays.clear();
   addDistantMountains(groups.backdrop);
 
-  const ringGeo = new THREE.RingGeometry(state.territoryRadius - .2, state.territoryRadius + .18, 128);
+  groups.terrain.add(buildTerrainSurface(state));
+
+  const ringGeo = new THREE.RingGeometry(state.territoryRadius - .2, state.territoryRadius + .12, 128);
   const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd66b, transparent: true, opacity: .16, side: THREE.DoubleSide }));
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = .08;
@@ -168,9 +205,9 @@ export function renderTiles(sceneCtx, state) {
 
   state.map.forEach((tile) => {
     tile.decorMeshes = [];
-    const mesh = makeHexMesh(tile);
-    groups.tiles.add(mesh);
-    tile.mesh = mesh;
+    const pickMesh = createHiddenPickMesh(tile);
+    groups.tiles.add(pickMesh);
+    tile.mesh = pickMesh;
 
     if (tile.type === 'forest') { addTreeCluster(groups.decor, tile, tile.pos, tile.height + .02, false); addBushCluster(groups.decor, tile, tile.pos, tile.height + .02, 1.2); addGrassCluster(groups.decor, tile, tile.pos, tile.height + .02, 0x9bb067, 4); }
     if (tile.type === 'rock') addRockCluster(groups.decor, tile, tile.pos, tile.height + .02, false);
@@ -186,31 +223,26 @@ export function updateTerritoryOverlay(sceneCtx, state) {
   const ring = sceneCtx.groups.overlays.getObjectByName('territory-ring');
   if (!ring) return;
   ring.geometry.dispose();
-  ring.geometry = new THREE.RingGeometry(state.territoryRadius - .2, state.territoryRadius + .18, 128);
+  ring.geometry = new THREE.RingGeometry(state.territoryRadius - .2, state.territoryRadius + .12, 128);
 }
 
 export function renderRoads(sceneCtx, state) {
   const { groups } = sceneCtx;
   groups.roads.clear();
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0xb6915d, roughness: 1 });
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0xd1b07d, roughness: 1 });
   state.roads.forEach((road) => {
     const a = state.mapIndex.get(road.a);
     const b = state.mapIndex.get(road.b);
     if (!a || !b) return;
-    const dir = new THREE.Vector3().subVectors(b.pos, a.pos);
-    const len = dir.length();
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(.72, .06, len), roadMat);
-    mesh.position.set((a.pos.x + b.pos.x) / 2, ((a.height + b.height) / 2) + .08, (a.pos.z + b.pos.z) / 2);
-    mesh.lookAt(b.pos.x, mesh.position.y, b.pos.z);
-    mesh.rotateY(Math.PI);
+    const p1 = new THREE.Vector3(a.pos.x, a.height + 0.03, a.pos.z);
+    const p2 = new THREE.Vector3().lerpVectors(p1, new THREE.Vector3(b.pos.x, b.height + 0.03, b.pos.z), 0.5);
+    p2.y += 0.02;
+    const p3 = new THREE.Vector3(b.pos.x, b.height + 0.03, b.pos.z);
+    const curve = new THREE.CatmullRomCurve3([p1, p2, p3]);
+    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 6, 0.12, 6, false), roadMat);
     mesh.receiveShadow = true;
     groups.roads.add(mesh);
   });
-}
-
-function seeded(tile, salt = 1) {
-  const x = Math.sin(tile.q * 127.1 + tile.r * 311.7 + salt * 74.7) * 43758.5453123;
-  return x - Math.floor(x);
 }
 
 function decorChoices(tile) {
