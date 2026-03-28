@@ -49,15 +49,12 @@ async function bootstrap() {
   spawnEnemyCamps();
   renderRoads(sceneCtx, state);
 
-  setLoading(58, 'Расстановка декоративных моделей…');
-  await populateDecorModels(sceneCtx, state);
-
-  setLoading(66, 'Подготовка интерфейса…');
+  setLoading(58, 'Подготовка интерфейса…');
   updateHud(state);
   drawMinimap(state);
   updateSelection(state);
 
-  setLoading(82, 'Подключение ввода…');
+  setLoading(72, 'Подключение ввода…');
   setupInput(sceneCtx, state, {
     onTile: onTileSelected,
     onTileDouble: onTileDoubleSelected,
@@ -72,6 +69,13 @@ async function bootstrap() {
     setSpeedButton(1);
     showRules();
     animate();
+    queueMicrotask(async () => {
+      try {
+        await populateDecorModels(sceneCtx, state);
+      } catch (err) {
+        console.warn('Decor background load failed', err);
+      }
+    });
   }, 260);
 
   addEventListener('resize', () => {
