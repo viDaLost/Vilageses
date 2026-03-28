@@ -24,12 +24,12 @@ export function createScene(canvas) {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = innerWidth < 760 ? 2.05 : 1.9;
+  renderer.toneMappingExposure = innerWidth < 760 ? 2.08 : 1.95;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xb19375, 78, 230);
+  scene.fog = new THREE.Fog(0xb19375, 84, 250);
 
-  const camera = new THREE.PerspectiveCamera(innerWidth < 760 ? 52 : 50, innerWidth / innerHeight, .1, 800);
+  const camera = new THREE.PerspectiveCamera(innerWidth < 760 ? 52 : 50, innerWidth / innerHeight, .1, 900);
   camera.position.set(innerWidth < 760 ? 18 : 22, innerWidth < 760 ? 21 : 26, innerWidth < 760 ? 18 : 21);
 
   const controls = new OrbitControls(camera, canvas);
@@ -38,7 +38,7 @@ export function createScene(canvas) {
   controls.maxDistance = innerWidth < 760 ? 56 : 108;
   controls.minDistance = innerWidth < 760 ? 11 : 5;
   controls.maxPolarAngle = Math.PI / 2.08;
-  controls.minPolarAngle = Math.PI / 4.9;
+  controls.minPolarAngle = Math.PI / 5.2;
   controls.enablePan = !('ontouchstart' in window);
   controls.screenSpacePanning = false;
   controls.panSpeed = .9;
@@ -48,17 +48,17 @@ export function createScene(canvas) {
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), innerWidth < 800 ? .11 : .09, .35, .96));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), innerWidth < 800 ? .08 : .07, .35, .97));
 
-  const hemi = new THREE.HemisphereLight(0xfffbef, 0x8a6545, 2.5);
+  const hemi = new THREE.HemisphereLight(0xfffbef, 0x8a6545, 2.2);
   scene.add(hemi);
-  const ambient = new THREE.AmbientLight(0xfff4e5, 1.15);
+  const ambient = new THREE.AmbientLight(0xfff4e5, 1.0);
   scene.add(ambient);
-  const fill = new THREE.DirectionalLight(0xfff0da, 1.15);
+  const fill = new THREE.DirectionalLight(0xfff0da, 0.95);
   fill.position.set(-26, 28, 16);
   scene.add(fill);
 
-  const sun = new THREE.DirectionalLight(0xffedcf, 3.2);
+  const sun = new THREE.DirectionalLight(0xffedcf, 2.8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -70;
@@ -112,14 +112,15 @@ export function createScene(canvas) {
   scene.add(cloudLayer);
 
   const worldBase = new THREE.Mesh(
-    new THREE.CylinderGeometry(54, 64, 8, 48),
-    new THREE.MeshStandardMaterial({ color: 0x5a4129, roughness: 1 })
+    new THREE.CylinderGeometry(58, 68, 12, 56),
+    new THREE.MeshStandardMaterial({ color: 0x6b5036, roughness: 1 })
   );
-  worldBase.position.y = -5.6;
+  worldBase.position.y = -6.6;
   worldBase.receiveShadow = true;
   scene.add(worldBase);
 
   const groups = {
+    terrain: new THREE.Group(),
     tiles: new THREE.Group(),
     decor: new THREE.Group(),
     roads: new THREE.Group(),
