@@ -16,6 +16,12 @@ export function openDrawer(title, subtitle, html) {
 
 export function bindDrawerClose() {
   $('#drawer-close').onclick = closeDrawer;
+  document.addEventListener('pointerdown', (e) => {
+    const drawer = $('#context-drawer');
+    if (drawer.classList.contains('hidden')) return;
+    if (e.target.closest('#context-drawer, .action-btn, .speed-btn, #modal-window')) return;
+    if (e.target.closest('canvas')) closeDrawer();
+  });
 }
 
 export function openBuildMenu(state, onChoose) {
@@ -29,7 +35,7 @@ export function openBuildMenu(state, onChoose) {
         <small>${categoryLabel(cfg.category)}</small>
       </button>`;
     }).join('');
-  openDrawer('Строительство', 'Выбери тип, затем коснись клетки — или дважды тапни по соте для быстрого строительства', `<div class="card-grid">${cards}</div>`);
+  openDrawer('Строительство', 'Выбери тип и тапни по соте. На телефоне меню открывается как нижняя панель.', `<div class="card-grid">${cards}</div>`);
   $$('[data-build-type]').forEach((btn) => {
     btn.onclick = () => onChoose(btn.dataset.buildType);
   });
@@ -40,7 +46,7 @@ export function openQuickBuildMenu(state, tile, onChoose) {
     .filter(([key, cfg]) => key !== 'capital' && (!cfg.minEra || state.era >= cfg.minEra))
     .filter(([, cfg]) => !cfg.terrain || cfg.terrain.includes(tile.type))
     .sort((a, b) => scoreCandidate(a[0], tile.type) - scoreCandidate(b[0], tile.type))
-    .slice(0, 4);
+    .slice(0, innerWidth < 760 ? 8 : 6);
 
   const cards = candidates.map(([key, cfg]) => `
     <button class="card-btn" data-quick-build="${key}">
@@ -51,8 +57,8 @@ export function openQuickBuildMenu(state, tile, onChoose) {
 
   openDrawer(
     `Быстрая постройка`,
-    `${TERRAIN_TYPES[tile.type].name} • двойной тап может строить мгновенно последнюю постройку`,
-    cards || '<div class="list-item">Для этой клетки пока нет доступных построек.</div>'
+    `${TERRAIN_TYPES[tile.type].name} • двойной тап ставит последнюю постройку, если она подходит`,
+    `<div class="card-grid quick-grid">${cards || '<div class="list-item">Для этой клетки пока нет доступных построек.</div>'}</div>`
   );
 
   $$('[data-quick-build]').forEach((btn) => {
@@ -150,13 +156,13 @@ function categoryLabel(key) {
 
 function scoreCandidate(type, terrain) {
   const preferred = {
-    fertile: ['farm', 'granary', 'market'],
-    river: ['farm', 'harbor', 'market'],
+    fertile: ['farm', 'granary', 'market', 'temple'],
+    river: ['farm', 'harbor', 'market', 'granary'],
     forest: ['lumber', 'tower', 'wall'],
     hill: ['mine', 'tower', 'barracks'],
     rock: ['mine', 'temple', 'tower'],
     sacred: ['temple', 'academy', 'wonder'],
-    grass: ['farm', 'market', 'barracks']
+    grass: ['farm', 'market', 'barracks', 'granary']
   };
   const list = preferred[terrain] || [];
   const idx = list.indexOf(type);

@@ -47,12 +47,13 @@ export function updateHud(state) {
 
 function kingdomText(state) {
   if (state.gameEnded) return 'Партия завершена. Можно продолжать смотреть на мир или начать заново.';
-  if (state.resources.stability < 35) return 'Народ на грани смуты. Нужны пища, храм или амбар.';
+  if (state.resources.stability < 35) return 'Народ на грани смуты. Укрепляй порядок и пищу.';
   if (state.resources.food < state.resources.population * 2.5) return 'Запасы пищи тают. Усиль фермы и амбары.';
   if (state.resources.threat > 45) return 'Рубежи тревожны. Башни и войска нужны уже сейчас.';
+  if (state.construction.length) return 'Над строящимися сотами теперь видно таймер и пыль работ.';
   if (state.era === 2) return 'Империя вступила в зрелый золотой век.';
   if (state.techProgress) return `Учёные работают: ${state.techProgress.id}`;
-  return 'Двойной тап по свободной соте открывает быструю постройку.';
+  return 'Двойной тап по свободной соте открывает нижнюю быструю постройку.';
 }
 
 function toClock(dayTime) {

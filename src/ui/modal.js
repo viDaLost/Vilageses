@@ -2,6 +2,9 @@ import { $, $$ } from './dom.js';
 
 export function setupModal() {
   $('#modal-close').onclick = closeModal;
+  $('#modal-overlay').addEventListener('pointerdown', (e) => {
+    if (e.target === $('#modal-overlay')) closeModal();
+  });
 }
 
 export function openModal(title, subtitle, html, actions = []) {
