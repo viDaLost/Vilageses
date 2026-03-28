@@ -1,6 +1,9 @@
 import { OBJECTIVES } from './config.js';
 
 export function createInitialState() {
+  // ВРЕМЕННАЯ СТРОКА: Жестко очищает все сохранения в браузере
+  localStorage.clear();
+
   return {
     timeScale: 1,
     paused: false,
