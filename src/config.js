@@ -222,7 +222,6 @@ export const UNITS = {
   }
 };
 
-
 export const DECOR_MODELS = {
   tree: { file: 'trees.glb', scale: 0.44, y: 0.0, root: 'decor' },
   oak: { file: 'trees.glb', scale: 0.52, y: 0.0, root: 'decor' },
@@ -235,13 +234,13 @@ export const DECOR_MODELS = {
 };
 
 export const UNIT_MODEL_MAP = {
-  worker: { file: 'monk.gltf', targetHeight: 0.2, y: 0.0, rotY: 3.141592653589793, faceOffset: 0 },
-  militia: { file: 'warrior.gltf', targetHeight: 0.22, y: 0.0, rotY: 3.141592653589793, faceOffset: 0 },
-  swordsman: { file: 'rogue.gltf', targetHeight: 0.21, y: 0.0, rotY: 3.141592653589793, faceOffset: 0 },
-  raider: { file: 'rogue.gltf', targetHeight: 0.21, y: 0.0, rotY: 3.141592653589793, faceOffset: 0 },
-  raiderArcher: { file: 'ranger.gltf', targetHeight: 0.21, y: 0.0, rotY: 3.141592653589793, faceOffset: 0 },
-  brute: { file: 'warrior.gltf', targetHeight: 0.24, y: 0.0, rotY: 3.141592653589793, faceOffset: 0 },
-  wolfRider: { file: 'wizard.gltf', targetHeight: 0.23, y: 0.0, rotY: 3.141592653589793, faceOffset: 0 },
+  worker: { file: 'monk.gltf', targetHeight: 0.45, y: 0.0, rotY: Math.PI, faceOffset: Math.PI },
+  militia: { file: 'warrior.gltf', targetHeight: 0.48, y: 0.0, rotY: Math.PI, faceOffset: Math.PI },
+  swordsman: { file: 'rogue.gltf', targetHeight: 0.47, y: 0.0, rotY: Math.PI, faceOffset: Math.PI },
+  raider: { file: 'rogue.gltf', targetHeight: 0.47, y: 0.0, rotY: Math.PI, faceOffset: Math.PI },
+  raiderArcher: { file: 'ranger.gltf', targetHeight: 0.47, y: 0.0, rotY: Math.PI, faceOffset: Math.PI },
+  brute: { file: 'warrior.gltf', targetHeight: 0.55, y: 0.0, rotY: Math.PI, faceOffset: Math.PI },
+  wolfRider: { file: 'wizard.gltf', targetHeight: 0.52, y: 0.0, rotY: Math.PI, faceOffset: Math.PI },
 };
 
 export const UNIT_VISUALS = {
