@@ -6,7 +6,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 function makeCloudCluster() {
   const group = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: 0xf8f1db, transparent: true, opacity: .22, roughness: 1 });
+  const mat = new THREE.MeshStandardMaterial({ color: 0xfaf3e1, transparent: true, opacity: .28, roughness: 1 });
   for (let i = 0; i < 4; i++) {
     const puff = new THREE.Mesh(new THREE.SphereGeometry(4 + Math.random() * 3, 10, 10), mat);
     puff.scale.y = .45 + Math.random() * .15;
@@ -18,40 +18,45 @@ function makeCloudCluster() {
 
 export function createScene(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 900 ? 1.4 : 1.85));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 900 ? 1.5 : 2));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = innerWidth < 900 ? 1.24 : 1.1;
+  renderer.toneMappingExposure = innerWidth < 760 ? 1.5 : 1.35;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x2a180f, 34, 132);
+  scene.fog = new THREE.Fog(0x6e5d4f, 42, 168);
 
   const camera = new THREE.PerspectiveCamera(innerWidth < 760 ? 52 : 50, innerWidth / innerHeight, .1, 800);
-  camera.position.set(innerWidth < 760 ? 18 : 20, innerWidth < 760 ? 22 : 25, innerWidth < 760 ? 18 : 19);
+  camera.position.set(innerWidth < 760 ? 18 : 20, innerWidth < 760 ? 21 : 24, innerWidth < 760 ? 18 : 19);
 
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = .065;
-  controls.maxDistance = innerWidth < 760 ? 52 : 72;
-  controls.minDistance = innerWidth < 760 ? 13 : 10;
-  controls.maxPolarAngle = Math.PI / 2.22;
-  controls.minPolarAngle = Math.PI / 4.4;
+  controls.maxDistance = innerWidth < 760 ? 56 : 96;
+  controls.minDistance = innerWidth < 760 ? 11 : 7;
+  controls.maxPolarAngle = Math.PI / 2.12;
+  controls.minPolarAngle = Math.PI / 4.8;
   controls.enablePan = false;
+  controls.zoomSpeed = 1.15;
+  if ('zoomToCursor' in controls) controls.zoomToCursor = true;
   controls.target.set(0, 1.4, 0);
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), innerWidth < 800 ? .16 : .13, .42, .9));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), innerWidth < 800 ? .1 : .08, .35, .96));
 
-  const hemi = new THREE.HemisphereLight(0xfff2de, 0x5b3216, 1.32);
+  const hemi = new THREE.HemisphereLight(0xfff4df, 0x7b5131, 1.75);
   scene.add(hemi);
-  const ambient = new THREE.AmbientLight(0xffefdb, .34);
+  const ambient = new THREE.AmbientLight(0xfff0dd, .56);
   scene.add(ambient);
+  const fill = new THREE.DirectionalLight(0xffeed1, .6);
+  fill.position.set(-26, 28, 16);
+  scene.add(fill);
 
-  const sun = new THREE.DirectionalLight(0xffe9c8, 1.72);
+  const sun = new THREE.DirectionalLight(0xffe9c8, 2.25);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -70;
@@ -66,8 +71,8 @@ export function createScene(canvas) {
     new THREE.ShaderMaterial({
       side: THREE.BackSide,
       uniforms: {
-        topColor: { value: new THREE.Color(0x83c3ff) },
-        bottomColor: { value: new THREE.Color(0xf5d8a3) },
+        topColor: { value: new THREE.Color(0x9ad9ff) },
+        bottomColor: { value: new THREE.Color(0xffd9aa) },
         offset: { value: 20 },
         exponent: { value: .7 }
       },
@@ -106,7 +111,7 @@ export function createScene(canvas) {
 
   const worldBase = new THREE.Mesh(
     new THREE.CylinderGeometry(54, 64, 8, 48),
-    new THREE.MeshStandardMaterial({ color: 0x3c2b18, roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: 0x4d3823, roughness: 1 })
   );
   worldBase.position.y = -5.6;
   worldBase.receiveShadow = true;
@@ -129,10 +134,10 @@ export function createScene(canvas) {
   function resize() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 900 ? 1.4 : 1.85));
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 900 ? 1.5 : 2));
     renderer.setSize(innerWidth, innerHeight);
     composer.setSize(innerWidth, innerHeight);
   }
 
-  return { renderer, scene, camera, controls, composer, hemi, ambient, sun, sky, stars, cloudLayer, world, worldBase, groups, effectBursts: [], resize };
+  return { renderer, scene, camera, controls, composer, hemi, ambient, fill, sun, sky, stars, cloudLayer, world, worldBase, groups, effectBursts: [], resize };
 }

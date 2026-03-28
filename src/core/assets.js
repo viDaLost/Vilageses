@@ -18,24 +18,46 @@ async function loadFirst(paths) {
   throw lastError || new Error('Model not found');
 }
 
-export async function loadBuildingModel(filename) {
-  if (!filename) return null;
-  if (cache.has(filename)) return cache.get(filename).clone(true);
-
-  const { scene } = await loadFirst(getModelCandidates(filename));
+function prepareScene(scene) {
   scene.traverse((obj) => {
     if (obj.isMesh) {
       obj.castShadow = true;
       obj.receiveShadow = true;
+      obj.frustumCulled = true;
       if (Array.isArray(obj.material)) {
-        obj.material.forEach((m) => { m.depthWrite = true; });
+        obj.material.forEach((m) => {
+          m.depthWrite = true;
+          if ('envMapIntensity' in m) m.envMapIntensity = 0.65;
+        });
       } else if (obj.material) {
         obj.material.depthWrite = true;
+        if ('envMapIntensity' in obj.material) obj.material.envMapIntensity = 0.65;
       }
     }
   });
-  cache.set(filename, scene);
+  return scene;
+}
+
+async function loadModel(filename, root = 'buildings') {
+  if (!filename) return null;
+  const key = `${root}:${filename}`;
+  if (cache.has(key)) return cache.get(key).clone(true);
+  const { scene } = await loadFirst(getModelCandidates(filename, root));
+  prepareScene(scene);
+  cache.set(key, scene);
   return scene.clone(true);
+}
+
+export function loadBuildingModel(filename) {
+  return loadModel(filename, 'buildings');
+}
+
+export function loadDecorModel(filename) {
+  return loadModel(filename, 'decor');
+}
+
+export function loadUnitModel(filename) {
+  return loadModel(filename, 'units');
 }
 
 export function makeFallbackMesh(color = 0xb4873e) {
