@@ -1,3 +1,14 @@
+
+function syncViewportHeight() {
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', `${Math.round(h)}px`);
+}
+
+syncViewportHeight();
+window.addEventListener('resize', syncViewportHeight, { passive: true });
+window.visualViewport?.addEventListener('resize', syncViewportHeight, { passive: true });
+window.visualViewport?.addEventListener('scroll', syncViewportHeight, { passive: true });
+
 import * as THREE from 'three';
 import { GAME_CONFIG, BUILDINGS, UNITS } from './config.js';
 import { createInitialState } from './state.js';
@@ -67,6 +78,7 @@ async function bootstrap() {
 
   setLoading(48, 'Размещение столицы…');
   await spawnCapital();
+  createRoadNetworkFromCapital();
   spawnEnemyCamps();
   renderRoads(sceneCtx, state);
 
@@ -148,7 +160,15 @@ async function spawnCapital() {
   for (const done of completed) await finishConstruction(sceneCtx, state, done);
 }
 
-function createRoadNetworkFromCapital() {}
+function createRoadNetworkFromCapital() {
+  const capital = getBuildingById(state, state.capitalId);
+  if (!capital) return;
+  const tile = state.mapIndex.get(capital.tileId);
+  for (const neighbor of getNeighbors(state, tile)) {
+    if (!neighbor || neighbor.type === 'water') continue;
+    addRoad(tile.id, neighbor.id);
+  }
+}
 
 function makeCampMesh(tile, faction) {
   const colors = { clans: 0x7a1711, iron: 0x666d76, beasts: 0x5c3c18 };

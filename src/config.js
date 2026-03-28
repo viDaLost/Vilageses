@@ -250,13 +250,13 @@ export const DECOR_MODELS = {
 };
 
 export const UNIT_MODEL_MAP = {
-  worker: { file: 'monk.gltf', scale: 0.78, y: -0.92, rotY: Math.PI },
-  militia: { file: 'warrior.gltf', scale: 0.82, y: -0.98, rotY: Math.PI },
-  swordsman: { file: 'rogue.gltf', scale: 0.9, y: -1.0, rotY: Math.PI },
-  raider: { file: 'rogue.gltf', scale: 0.92, y: -1.0, rotY: Math.PI },
-  raiderArcher: { file: 'ranger.gltf', scale: 0.88, y: -0.98, rotY: Math.PI },
-  brute: { file: 'warrior.gltf', scale: 1.0, y: -1.05, rotY: Math.PI },
-  wolfRider: { file: 'wizard.gltf', scale: 0.96, y: -1.02, rotY: Math.PI },
+  worker: { file: 'monk.gltf', scale: 0.34, y: -0.42, rotY: 0, faceOffset: 0 },
+  militia: { file: 'warrior.gltf', scale: 0.36, y: -0.46, rotY: 0, faceOffset: 0 },
+  swordsman: { file: 'rogue.gltf', scale: 0.38, y: -0.48, rotY: 0, faceOffset: 0 },
+  raider: { file: 'rogue.gltf', scale: 0.38, y: -0.48, rotY: 0, faceOffset: 0 },
+  raiderArcher: { file: 'ranger.gltf', scale: 0.36, y: -0.46, rotY: 0, faceOffset: 0 },
+  brute: { file: 'warrior.gltf', scale: 0.42, y: -0.5, rotY: 0, faceOffset: 0 },
+  wolfRider: { file: 'wizard.gltf', scale: 0.4, y: -0.48, rotY: 0, faceOffset: 0 },
 };
 
 export const UNIT_VISUALS = {
