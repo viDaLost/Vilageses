@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { UNITS } from '../config.js';
-import { getCapital } from './buildings.js';
+import { getCapital, buildingCenter } from './buildings.js';
 import { dist2 } from '../utils/helpers.js';
+import { spawnCollapse } from './combat.js';
 
 let unitId = 1;
 
@@ -25,6 +26,7 @@ function makeUnitMesh(type) {
   body.castShadow = head.castShadow = true;
   head.position.y = .54;
   group.add(body, head);
+  group.userData.body = body;
 
   if (type === 'worker') {
     const hat = new THREE.Mesh(new THREE.ConeGeometry(.24, .22, 8), new THREE.MeshStandardMaterial({ color: 0x9b6c2a, roughness: 1 }));
@@ -65,6 +67,14 @@ function makeUnitMesh(type) {
       blade.position.set(.43, .5, 0);
       blade.rotation.z = -.42;
       group.add(axe, blade);
+    } else if (type === 'wolfRider') {
+      body.scale.set(1.1, .9, 1.45);
+      const rider = new THREE.Mesh(new THREE.CapsuleGeometry(.12, .22, 4, 6), new THREE.MeshStandardMaterial({ color: 0x6a2419, roughness: .9 }));
+      rider.position.y = .34;
+      const snout = new THREE.Mesh(new THREE.ConeGeometry(.09, .18, 6), new THREE.MeshStandardMaterial({ color: 0x3b2618, roughness: 1 }));
+      snout.rotation.z = -Math.PI / 2;
+      snout.position.set(.28, .02, 0);
+      group.add(rider, snout);
     } else {
       const spear = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .72, 5), new THREE.MeshStandardMaterial({ color: 0x5d4326, roughness: 1 }));
       spear.position.set(.24, .26, 0);
@@ -74,7 +84,7 @@ function makeUnitMesh(type) {
       spike.rotation.z = -.38;
       group.add(spear, spike);
     }
-    makeBanner(0x8a2318).forEach((x) => group.add(x));
+    makeBanner(type === 'brute' ? 0x50545f : type === 'wolfRider' ? 0x563516 : 0x8a2318).forEach((x) => group.add(x));
   }
 
   const ring = new THREE.Mesh(
@@ -102,7 +112,10 @@ export function spawnUnit(sceneCtx, state, type, pos, target = null) {
     pos: new THREE.Vector3(pos.x, pos.y, pos.z),
     target,
     mode: target ? 'move' : 'idle',
-    mesh: makeUnitMesh(type)
+    mesh: makeUnitMesh(type),
+    stepPhase: Math.random() * Math.PI * 2,
+    attackFlash: 0,
+    hitFlash: 0,
   };
   entity.mesh.position.copy(entity.pos);
   entity.mesh.position.y += .8;
@@ -147,12 +160,44 @@ function nearestTarget(unit, state, predicate, maxDistance = Infinity) {
   return { best, bestD };
 }
 
+function damageNearestBuilding(sceneCtx, state, unit, notify) {
+  let nearest = null;
+  let nearestD = Infinity;
+  state.buildings.forEach((b) => {
+    const d = dist2(unit.pos, buildingCenter(state, b));
+    if (d < nearestD) {
+      nearest = b;
+      nearestD = d;
+    }
+  });
+  if (!nearest || nearestD > unit.range + 0.7 || unit.attackCooldown > 0) return;
+  nearest.hp -= unit.attack * (unit.type === 'brute' ? 1.5 : 1);
+  nearest.hitFlash = .25;
+  unit.attackCooldown = unit.type === 'raiderArcher' ? 1.45 : 1.05;
+  unit.attackFlash = .16;
+  if (nearest.hp <= 0) {
+    const center = buildingCenter(state, nearest);
+    spawnCollapse(sceneCtx, center, nearest.type === 'wall' ? 0x9c9c9c : 0xa06b44);
+    if (nearest.type === 'capital') {
+      nearest.hp = 0;
+    } else {
+      sceneCtx.groups.buildings.remove(nearest.mesh);
+      const tile = state.mapIndex.get(nearest.tileId);
+      if (tile) tile.buildingId = null;
+      state.buildings = state.buildings.filter((b) => b.id !== nearest.id);
+      notify(`Разрушено здание: ${nearest.type}`);
+    }
+  }
+}
+
 export function updateUnits(sceneCtx, state, dt, notify) {
   const capital = getCapital(state);
   const capitalTile = capital ? state.mapIndex.get(capital.tileId) : null;
   for (let i = state.units.length - 1; i >= 0; i--) {
     const unit = state.units[i];
     unit.attackCooldown = Math.max(0, unit.attackCooldown - dt);
+    unit.attackFlash = Math.max(0, unit.attackFlash - dt * 2.2);
+    unit.hitFlash = Math.max(0, unit.hitFlash - dt * 3.4);
 
     let targetPos = null;
     if (unit.hostile) {
@@ -161,10 +206,13 @@ export function updateUnits(sceneCtx, state, dt, notify) {
         targetPos = defender.pos;
         if (bestD <= unit.range + .35 && unit.attackCooldown <= 0) {
           defender.hp -= unit.attack;
-          unit.attackCooldown = 1.15;
+          defender.hitFlash = .18;
+          unit.attackCooldown = unit.type === 'raiderArcher' ? 1.45 : 1.15;
+          unit.attackFlash = .15;
         }
       } else if (capitalTile) {
         targetPos = capitalTile.pos;
+        damageNearestBuilding(sceneCtx, state, unit, notify);
       }
     } else if (unit.type !== 'worker') {
       const { best: enemy, bestD } = nearestTarget(unit, state, (u) => u.hostile, 8);
@@ -172,7 +220,9 @@ export function updateUnits(sceneCtx, state, dt, notify) {
         targetPos = enemy.pos;
         if (bestD <= unit.range + .35 && unit.attackCooldown <= 0) {
           enemy.hp -= unit.attack;
+          enemy.hitFlash = .18;
           unit.attackCooldown = .95;
+          unit.attackFlash = .12;
         }
       } else if (capitalTile) {
         targetPos = capitalTile.pos;
@@ -187,10 +237,17 @@ export function updateUnits(sceneCtx, state, dt, notify) {
         dir.normalize();
         unit.pos.addScaledVector(dir, unit.speed * dt);
         unit.mesh.lookAt(unit.pos.x + dir.x, unit.mesh.position.y, unit.pos.z + dir.z);
+        unit.stepPhase += dt * unit.speed * 5;
       }
     }
 
-    unit.mesh.position.set(unit.pos.x, unit.pos.y + .8, unit.pos.z);
+    unit.mesh.position.set(unit.pos.x, unit.pos.y + .8 + Math.sin(unit.stepPhase || 0) * .03, unit.pos.z);
+    const body = unit.mesh.userData.body;
+    if (body) {
+      body.rotation.z = unit.attackFlash * (unit.hostile ? -0.85 : 0.85);
+      body.material.emissive?.setHex(0x000000);
+    }
+    unit.mesh.scale.setScalar(1 + unit.hitFlash * .12);
 
     if (unit.hp <= 0) {
       if (unit.hostile) {
@@ -198,6 +255,7 @@ export function updateUnits(sceneCtx, state, dt, notify) {
         state.resources.threat = Math.max(0, state.resources.threat - .6);
         state.stats.raidsDefeated += 1;
       }
+      spawnCollapse(sceneCtx, unit.pos.clone().add(new THREE.Vector3(0,.5,0)), unit.hostile ? 0xa13d2f : 0xd3c7a5);
       sceneCtx.groups.units.remove(unit.mesh);
       state.units.splice(i, 1);
       continue;

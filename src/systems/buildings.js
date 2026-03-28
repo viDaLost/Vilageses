@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BUILDINGS } from '../config.js';
 import { loadBuildingModel, makeFallbackMesh } from '../core/assets.js';
 import { getNeighbors, isTileInsideTerritory } from './world.js';
-import { dist2 } from '../utils/helpers.js';
+import { dist2, clamp } from '../utils/helpers.js';
 
 let buildingId = 1;
 
@@ -25,6 +25,23 @@ function scaleForBuilding(type, level) {
   return (base[type] || .85) * (1 + (level - 1) * .07);
 }
 
+export function getUpgradeCost(type, nextLevel) {
+  const cfg = BUILDINGS[type];
+  const base = cfg.cost || {};
+  const mul = 0.7 + nextLevel * 0.42;
+  const out = {};
+  Object.entries(base).forEach(([k, v]) => { out[k] = Math.max(1, Math.round(v * mul)); });
+  if (!Object.keys(out).length) {
+    out.gold = 45 * nextLevel;
+    out.stone = 18 * nextLevel;
+  }
+  return out;
+}
+
+export function getUpgradeTime(type, nextLevel) {
+  return Math.round((BUILDINGS[type].baseBuildTime || 12) * (0.85 + nextLevel * 0.28));
+}
+
 export function canPlaceBuilding(state, type, tile) {
   const cfg = BUILDINGS[type];
   if (!cfg || !tile) return false;
@@ -34,6 +51,14 @@ export function canPlaceBuilding(state, type, tile) {
   if (cfg.terrain && !cfg.terrain.includes(tile.type)) return false;
   if (type === 'wonder' && state.buildings.some((b) => b.type === 'wonder')) return false;
   return true;
+}
+
+export function canUpgradeBuilding(state, building) {
+  if (!building) return false;
+  const cfg = BUILDINGS[building.type];
+  if (!cfg || building.level >= (cfg.maxLevel || 1)) return false;
+  if (state.construction.some((job) => job.buildingId === building.id)) return false;
+  return hasCost(state.resources, getUpgradeCost(building.type, building.level + 1));
 }
 
 export function payCost(resources, cost) {
@@ -61,13 +86,74 @@ export function placeConstruction(state, type, tile) {
     tileId: tile.id,
     progress: 0,
     buildTime: cfg.baseBuildTime,
+    mode: 'new',
   };
   state.construction.push(job);
   tile.buildingId = id;
   return job;
 }
 
+export function startUpgrade(state, building) {
+  const nextLevel = building.level + 1;
+  const cost = getUpgradeCost(building.type, nextLevel);
+  if (!hasCost(state.resources, cost)) return null;
+  payCost(state.resources, cost);
+  const job = {
+    id: `c-${buildingId++}`,
+    type: building.type,
+    buildingId: building.id,
+    tileId: building.tileId,
+    progress: 0,
+    buildTime: getUpgradeTime(building.type, nextLevel),
+    mode: 'upgrade',
+    targetLevel: nextLevel,
+  };
+  state.construction.push(job);
+  building.upgrading = true;
+  return job;
+}
+
+export function repairBuilding(state, building) {
+  if (!building || building.hp >= building.maxHp) return false;
+  const missing = building.maxHp - building.hp;
+  const cost = {
+    wood: Math.max(1, Math.round(missing / 25)),
+    stone: Math.max(0, Math.round(missing / 40)),
+    gold: Math.max(1, Math.round(missing / 35)),
+  };
+  if (!hasCost(state.resources, cost)) return false;
+  payCost(state.resources, cost);
+  building.hp = Math.min(building.maxHp, building.hp + missing * .7);
+  return true;
+}
+
+export function destroyBuilding(sceneCtx, state, building) {
+  if (!building || building.type === 'capital') return false;
+  const tile = state.mapIndex.get(building.tileId);
+  if (tile) tile.buildingId = null;
+  sceneCtx.groups.buildings.remove(building.mesh);
+  state.buildings = state.buildings.filter((b) => b.id !== building.id);
+  const refund = Math.round((BUILDINGS[building.type].cost?.wood || 0) * .25);
+  state.resources.wood += refund;
+  state.resources.stone += Math.round((BUILDINGS[building.type].cost?.stone || 0) * .2);
+  return true;
+}
+
 export async function finishConstruction(sceneCtx, state, job) {
+  if (job.mode === 'upgrade') {
+    const building = getBuildingById(state, job.buildingId);
+    if (!building) return null;
+    const cfg = BUILDINGS[building.type];
+    building.level = job.targetLevel;
+    building.maxHp = Math.round(cfg.health * (1 + (building.level - 1) * .25));
+    building.hp = building.maxHp;
+    building.upgrading = false;
+    const model = building.mesh.children[0];
+    if (model) model.scale.setScalar(scaleForBuilding(building.type, building.level));
+    if (building.glow) building.glow.intensity = .9 + building.level * .1;
+    return building;
+  }
+
   const cfg = BUILDINGS[job.type];
   const tile = state.mapIndex.get(job.tileId);
   if (!cfg || !tile) return null;
@@ -83,6 +169,9 @@ export async function finishConstruction(sceneCtx, state, job) {
     trainQueue: [],
     mesh: new THREE.Group(),
     selection: null,
+    glow: null,
+    hitFlash: 0,
+    upgrading: false,
   };
 
   let model;
@@ -100,9 +189,10 @@ export async function finishConstruction(sceneCtx, state, job) {
   entity.mesh.add(ring);
   entity.selection = ring;
 
-  const light = new THREE.PointLight(0xffcc88, 0, 6);
+  const light = new THREE.PointLight(0xffcc88, 0.75, 6);
   light.position.set(0, tile.height + 1.8, 0);
   entity.mesh.add(light);
+  entity.glow = light;
   entity.mesh.userData.tileId = tile.id;
   entity.mesh.position.set(tile.pos.x, 0, tile.pos.z);
   sceneCtx.groups.buildings.add(entity.mesh);
@@ -186,4 +276,16 @@ export function nearestDefense(state, targetPos, radius = 7) {
     }
   });
   return best;
+}
+
+export function getBuildingStatus(state, building) {
+  const cfg = BUILDINGS[building.type];
+  const nextLevel = building.level + 1;
+  return {
+    cfg,
+    canUpgrade: building.level < (cfg.maxLevel || 1) && !state.construction.some((job) => job.buildingId === building.id),
+    upgradeCost: nextLevel <= (cfg.maxLevel || 1) ? getUpgradeCost(building.type, nextLevel) : null,
+    upgradeTime: nextLevel <= (cfg.maxLevel || 1) ? getUpgradeTime(building.type, nextLevel) : null,
+    repairNeeded: building.hp < building.maxHp,
+  };
 }
