@@ -31,12 +31,21 @@
   <div id="ui-root">
     <div id="top-bar" class="glass-panel"></div>
 
-    <div id="left-column">
-      <div class="glass-panel panel-block" id="kingdom-panel">
+    <div id="hud-strip">
+      <div class="glass-panel info-card" id="kingdom-panel">
         <div class="panel-title">Держава</div>
         <div id="kingdom-text">Империя крепнет в реальном времени.</div>
         <div class="badge-row" id="kingdom-badges"></div>
       </div>
+      <div class="glass-panel status-cluster" id="right-column">
+        <div class="mini-panel">⏱️ <span id="clock-label">06:00</span></div>
+        <div class="mini-panel">🌦️ <span id="weather-label">Ясно</span></div>
+        <div class="mini-panel">🏛️ <span id="era-label">Основание</span></div>
+        <div class="mini-panel">⚠️ <span id="threat-label">0</span></div>
+      </div>
+    </div>
+
+    <div id="side-panels">
       <div class="glass-panel panel-block" id="objectives-panel">
         <div class="panel-title">Цели</div>
         <div id="objectives-list"></div>
@@ -45,29 +54,23 @@
         <div class="panel-title" id="selection-title">Выбор</div>
         <div id="selection-content">Коснись клетки, здания или юнита.</div>
       </div>
-    </div>
-
-    <div id="right-column">
-      <div class="glass-panel mini-panel">⏱️ <span id="clock-label">06:00</span></div>
-      <div class="glass-panel mini-panel">🌦️ <span id="weather-label">Ясно</span></div>
-      <div class="glass-panel mini-panel">🏛️ <span id="era-label">Основание</span></div>
-      <div class="glass-panel mini-panel">⚠️ Угроза <span id="threat-label">0</span></div>
       <div class="glass-panel" id="minimap-wrap"><canvas id="minimap"></canvas></div>
     </div>
 
-    <div id="bottom-actions">
-      <button class="action-btn" data-action="focus-capital">🏰 Столица</button>
-      <button class="action-btn" data-action="build-menu">🛠️ Строить</button>
-      <button class="action-btn" data-action="train-menu">⚔️ Войска</button>
-      <button class="action-btn" data-action="research-menu">🔬 Знания</button>
-      <button class="action-btn" data-action="rules">❔ Правила</button>
-    </div>
-
-    <div id="speed-controls" class="glass-panel">
-      <button class="speed-btn active" data-speed="0">⏸</button>
-      <button class="speed-btn" data-speed="1">x1</button>
-      <button class="speed-btn" data-speed="2">x2</button>
-      <button class="speed-btn" data-speed="4">x4</button>
+    <div id="bottom-dock" class="glass-panel">
+      <div id="bottom-actions">
+        <button class="action-btn accent" data-action="focus-capital">🏰 Столица</button>
+        <button class="action-btn" data-action="build-menu">🛠️ Строить</button>
+        <button class="action-btn" data-action="train-menu">⚔️ Войска</button>
+        <button class="action-btn" data-action="research-menu">🔬 Знания</button>
+        <button class="action-btn wide" data-action="rules">❔ Правила</button>
+      </div>
+      <div id="speed-controls">
+        <button class="speed-btn active" data-speed="0">⏸</button>
+        <button class="speed-btn" data-speed="1">x1</button>
+        <button class="speed-btn" data-speed="2">x2</button>
+        <button class="speed-btn" data-speed="4">x4</button>
+      </div>
     </div>
 
     <div id="context-drawer" class="glass-panel hidden">
