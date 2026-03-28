@@ -234,9 +234,9 @@ export const DECOR_MODELS = {
 };
 
 export const UNIT_MODEL_MAP = {
-  worker: { file: 'monk.gltf', targetHeight: 0.11, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
-  militia: { file: 'warrior.gltf', targetHeight: 0.12, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
-  swordsman: { file: 'rogue.gltf', targetHeight: 0.12, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
+  worker: { file: 'monk.gltf', targetHeight: 0.1, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
+  militia: { file: 'warrior.gltf', targetHeight: 0.1, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
+  swordsman: { file: 'rogue.gltf', targetHeight: 0.1, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
   raider: { file: 'rogue.gltf', targetHeight: 0.12, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
   raiderArcher: { file: 'ranger.gltf', targetHeight: 0.12, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
   brute: { file: 'warrior.gltf', targetHeight: 0.15, y: 0.0, rotY: 3.141592653589793, faceOffset: Math.PI },
