@@ -38,7 +38,7 @@ export function updateHud(state) {
   $('#objectives-list').innerHTML = state.objectives.map((o) => {
     let current = 0;
     if (o.metric === 'food') current = state.resources.food;
-    if (o.metric === 'roads') current = state.resources.roads;
+    if (o.metric === 'defenseBuildings') current = state.buildings.filter((b) => ['wall','tower','barracks'].includes(b.type)).length;
     if (o.metric === 'armyUnits') current = state.stats.armyUnits;
     if (o.metric === 'wonderBuilt') current = state.stats.wonderBuilt;
     const pct = Math.min(100, Math.round(current / o.target * 100));

@@ -27,6 +27,6 @@ export function updateSelection(state) {
   if (sel.kind === 'unit') {
     const unit = sel.ref;
     title.textContent = UNITS[unit.type].name;
-    body.innerHTML = `<div>HP: <strong>${fmt(unit.hp)} / ${fmt(unit.maxHp)}</strong></div><div>Скорость: <strong>${fmt(unit.speed)}</strong></div><div>${unit.hostile ? 'Вражеский' : 'Свой'} юнит</div>`;
+    body.innerHTML = `<div>HP: <strong>${fmt(unit.hp)} / ${fmt(unit.maxHp)}</strong></div><div>Скорость: <strong>${fmt(unit.speed)}</strong></div><div>${unit.hostile ? 'Вражеский' : 'Свой'} юнит</div><div>${!unit.hostile ? 'После выбора коснись клетки, чтобы задать точку движения или патруля.' : ''}</div>`;
   }
 }
