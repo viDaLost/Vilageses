@@ -214,7 +214,9 @@ export function updateTraining(sceneCtx, state, dt, notify) {
     current.progress += dt;
     if (current.progress >= current.trainTime) {
       const tile = state.mapIndex.get(building.tileId);
-      const spawnPos = new THREE.Vector3(tile.pos.x + .8, tile.height, tile.pos.z + .8);
+      const spawnPos = current.type === 'worker'
+        ? (capitalSpawnPoint(state, building.type === 'capital' ? building : getCapital(state), tile) || new THREE.Vector3(tile.pos.x + 2.2, tile.height, tile.pos.z + 0.4))
+        : new THREE.Vector3(tile.pos.x + .8, tile.height, tile.pos.z + .8);
       const target = current.type === 'worker' ? null : (building.rallyTileId ? state.mapIndex.get(building.rallyTileId)?.pos?.clone() : getCapital(state) ? state.mapIndex.get(getCapital(state).tileId).pos.clone() : null);
       const unit = spawnUnit(sceneCtx, state, current.type, spawnPos, target);
       unit.homeBuildingId = building.id;
@@ -335,10 +337,15 @@ function workerTaskTarget(unit, state, capitalTile) {
   if (!building) return capitalTile ? capitalTile.pos.clone() : null;
   const center = buildingCenter(state, building);
   if (building.type === 'farm') {
-    const offsets = [[-0.55,0.34],[0.42,0.4],[0.18,-0.28],[-0.35,-0.18]];
+    const radius = Math.max(1.05, (building.blockRadius || 0.9) + 0.22);
+    const offsets = [
+      new THREE.Vector3(-radius, 0, 0.22),
+      new THREE.Vector3(radius * 0.82, 0, 0.32),
+      new THREE.Vector3(0.24, 0, -radius * 0.86),
+      new THREE.Vector3(-radius * 0.74, 0, -0.28),
+    ];
     const idx = Number(String(unit.id).replace(/\D/g, '')) % offsets.length;
-    const [ox, oz] = offsets[idx];
-    return new THREE.Vector3(center.x + ox, center.y, center.z + oz);
+    return center.clone().add(offsets[idx]);
   }
   const offset = building.type === 'mine' ? new THREE.Vector3(0.78, 0, 0.1) : new THREE.Vector3(0.72, 0, 0.18);
   return center.clone().add(offset);
@@ -349,6 +356,18 @@ function workerNearBuilding(unit, state, building, extraReach = 0.34) {
   const center = buildingCenter(state, building);
   const radius = Math.max(0.75, (building.blockRadius || 0.9) + extraReach);
   return dist2(unit.pos, center) <= radius;
+}
+
+function capitalSpawnPoint(state, capital, tile) {
+  const center = capital ? buildingCenter(state, capital) : tile?.pos?.clone();
+  if (!center) return null;
+  const ring = Math.max(1.75, (capital?.blockRadius || 2.1) + 0.45);
+  const angles = [0.38, 1.18, 2.12, 3.02, 4.06, 5.08];
+  const idx = Math.floor(Math.random() * angles.length);
+  const angle = angles[idx] + (Math.random() - 0.5) * 0.2;
+  const x = center.x + Math.cos(angle) * ring;
+  const z = center.z + Math.sin(angle) * ring;
+  return new THREE.Vector3(x, getTerrainY(x, z), z);
 }
 
 function workerNearCapital(unit, state, capital, capitalTile, extraReach = 0.38) {
@@ -504,13 +523,20 @@ export function updateUnits(sceneCtx, state, dt, notify) {
         }
       } else if (assignedBuilding.type === 'farm') {
         const node = workerTaskTarget(unit, state, capitalTile);
+        const farmRadius = Math.max(1.02, (assignedBuilding.blockRadius || 0.9) + 0.18);
         targetPos = node;
         unit.gatherCooldown -= dt;
-        if (node && unit.pos.distanceTo(node) < 0.42) {
+        const atFarm = node && (unit.pos.distanceTo(node) < 0.38 || workerNearBuilding(unit, state, assignedBuilding, 0.22));
+        if (atFarm) {
+          targetPos = null;
           if (unit.gatherCooldown <= 0) {
-            unit.gatherCooldown = 1.2;
+            unit.gatherCooldown = 1.15;
             state.resources.food += computeBuildingReturn(assignedBuilding);
           }
+          const center = buildingCenter(state, assignedBuilding);
+          const settle = edgeTargetToward(unit.pos, center, farmRadius);
+          unit.pos.lerp(settle, Math.min(1, dt * 4.5));
+          moved = false;
         }
       } else {
         if (unit.taskPhase === 'toBuilding') {
@@ -624,6 +650,8 @@ export function autoSpawnWorkers(sceneCtx, state, dt, notify) {
   if (!tile) return;
   state.resources.population += 1;
   state.resources.food = Math.max(0, state.resources.food - 6);
-  spawnUnit(sceneCtx, state, 'worker', new THREE.Vector3(tile.pos.x + (Math.random() - 0.5) * 1.2, tile.height, tile.pos.z + (Math.random() - 0.5) * 1.2), null);
+  const spawnPos = capitalSpawnPoint(state, capital, tile);
+  if (!spawnPos) return;
+  spawnUnit(sceneCtx, state, 'worker', spawnPos, null);
   notify('В столице вырос новый рабочий для экономики');
 }
